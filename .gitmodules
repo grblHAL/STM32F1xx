@@ -1,0 +1,15 @@
+[submodule "grbl"]
+	path = grbl
+	url = https://github.com/grblHAL/core
+[submodule "keypad"]
+	path = keypad
+	url = https://github.com/grblHAL/Plugin_I2C_keypad
+[submodule "sdcard"]
+	path = sdcard
+	url = https://github.com/grblHAL/Plugin_SD_card
+[submodule "odometer"]
+	path = odometer
+	url = https://github.com/grblHAL/Plugin_odometer
+[submodule "motors"]
+	path = motors
+	url = https://github.com/grblHAL/Plugins_motor
