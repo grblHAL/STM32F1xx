@@ -4,7 +4,7 @@ __NOTE:__ [STM32F3xx Blackpill](../STM32F3xx/README.md) can often be used as a d
 
 Loosely based on code from robomechs [6-AXIS-USBCNC-GRBL](https://github.com/robomechs/6-AXIS-USBCNC-GRBL) port, updated for [STM32CubeIDE](https://www.st.com/en/development-tools/stm32cubeide.htm) and the latest STM HAL drivers where appropriate.
 
-See the Wiki-page for [compiling grblHAL](https://github.com/terjeio/grblHAL/wiki/Compiling-GrblHAL) for instructions for how to import the project, configure the driver and compile.
+See the Wiki-page for [compiling grblHAL](https://github.com/grblHAL/core/wiki/Compiling-GrblHAL) for instructions for how to import the project, configure the driver and compile.
 
 Available driver options can be found [here](Inc/my_machine.h).
 
@@ -14,4 +14,4 @@ __NOTE:__ The SD card plugin requires the SPI1 port to be remapped, disabling th
 To reenable programming a special system command, `$PGM`, can be used - issue this followed by a hard reset or power cycle to do so.
 
 ---
-2021-01-09
+2021-04-14
