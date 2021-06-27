@@ -838,7 +838,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "210525";
+    hal.driver_version = "210626";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
@@ -888,7 +888,7 @@ bool driver_init (void)
     hal.stream.write = usbWriteS;
     hal.stream.write_all = usbWriteS;
     hal.stream.write_char = usbPutC;
-    hal.stream.get_rx_buffer_available = usbRxFree;
+    hal.stream.get_rx_buffer_free = usbRxFree;
     hal.stream.reset_read_buffer = usbRxFlush;
     hal.stream.cancel_read_buffer = usbRxCancel;
     hal.stream.suspend_read = usbSuspendInput;
@@ -897,7 +897,7 @@ bool driver_init (void)
     hal.stream.write = serialWriteS;
     hal.stream.write_all = serialWriteS;
     hal.stream.write_char = serialPutC;
-    hal.stream.get_rx_buffer_available = serialRxFree;
+    hal.stream.get_rx_buffer_free = serialRxFree;
     hal.stream.reset_read_buffer = serialRxFlush;
     hal.stream.cancel_read_buffer = serialRxCancel;
     hal.stream.suspend_read = serialSuspendInput;
