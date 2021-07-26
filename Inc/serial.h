@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2017-2020 Terje Io
+  Copyright (c) 2017-2021 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,14 +24,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "grbl/stream.h"
+
 #define RX_BUFFER_HWM 900
 #define RX_BUFFER_LWM 300
 
-void serialInit (void);
-int16_t serialGetC (void);
-bool serialPutC (const char c);
-void serialWriteS (const char *s);
-uint16_t serialRxFree (void);
-void serialRxFlush (void);
-void serialRxCancel (void);
-bool serialSuspendInput (bool suspend);
+const io_stream_t *serialInit (void);
+
+/*EOF*/
