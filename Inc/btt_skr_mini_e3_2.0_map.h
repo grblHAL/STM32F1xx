@@ -23,6 +23,11 @@
 #define BOARD_NAME "BTT SKR MINI E3 V2.0"
 #endif
 
+#define SERIAL2_MOD
+#define HAS_BOARD_INIT
+#undef TRINAMIC_ENABLE
+#define TRINAMIC_ENABLE 2209
+
 // Define step pulse output pins.
 #define STEP_PORT       GPIOB
 #define X_STEP_PIN      13 //PB13

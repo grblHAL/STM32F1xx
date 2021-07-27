@@ -24,11 +24,18 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "driver.h"
 #include "grbl/stream.h"
 
 #define RX_BUFFER_HWM 900
 #define RX_BUFFER_LWM 300
 
+#if !USB_SERIAL_CDC
 const io_stream_t *serialInit (void);
+#endif
+
+#ifdef SERIAL2_MOD
+const io_stream_t *serial2Init (void);
+#endif
 
 /*EOF*/

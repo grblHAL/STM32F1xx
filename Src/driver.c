@@ -926,6 +926,10 @@ bool driver_init (void)
     hal.driver_cap.limits_pull_up = On;
     hal.driver_cap.probe_pull_up = On;
 
+#ifdef HAS_BOARD_INIT
+    board_init();
+#endif
+
 #if TRINAMIC_ENABLE
     trinamic_init();
 #endif
