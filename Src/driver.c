@@ -84,12 +84,17 @@ static probe_state_t probe = {
 };
 
 #include "grbl/stepdir_map.h"
+#include "grbl/motor_pins.h"
 
 #if KEYPAD_ENABLE == 0
 #define KEYPAD_STROBE_BIT 0
 #endif
 
 #define DRIVER_IRQMASK (LIMIT_MASK|CONTROL_MASK|KEYPAD_STROBE_BIT)
+
+#if DRIVER_IRQMASK != (LIMIT_MASK+CONTROL_MASK+KEYPAD_STROBE_BIT)
+#error Interrupt enabled input pins must have unique pin numbers!
+#endif
 
 static void spindle_set_speed (uint_fast16_t pwm_value);
 
@@ -112,7 +117,19 @@ static void stepperEnable (axes_signals_t enable)
 #if TRINAMIC_ENABLE && TRINAMIC_I2C
     trinamic_stepper_enable(enable);
 #else
-    BITBAND_PERI(STEPPERS_DISABLE_PORT->ODR, STEPPERS_DISABLE_PIN) = enable.x;
+ #ifdef STEPPERS_ENABLE_PIN
+    BITBAND_PERI(STEPPERS_ENABLE_PORT->ODR, STEPPERS_ENABLE_PIN) = enable.x;
+ #else
+    BITBAND_PERI(STEPPERS_ENABLE_PORT->ODR, X_ENABLE_PIN) = enable.x;
+    BITBAND_PERI(STEPPERS_ENABLE_PORT->ODR, Y_ENABLE_PIN) = enable.y;
+    BITBAND_PERI(STEPPERS_ENABLE_PORT->ODR, Z_ENABLE_PIN) = enable.z;
+  #ifdef A_ENABLE_PIN
+    BITBAND_PERI(STEPPERS_ENABLE_PORT->ODR, A_ENABLE_PIN) = enable.a;
+  #endif
+  #ifdef STEPPERS_B_DISABLE_PIN
+    BITBAND_PERI(STEPPERS_ENABLE_PORT->ODR, STEPPERS_B_DISABLE_PIN) = enable.b;
+  #endif
+ #endif
 #endif
 }
 
@@ -715,8 +732,8 @@ static bool driver_setup (settings_t *settings)
 
  // Stepper init
 
-    GPIO_Init.Pin = STEPPERS_DISABLE_MASK;
-    HAL_GPIO_Init(STEPPERS_DISABLE_PORT, &GPIO_Init);
+    GPIO_Init.Pin = STEPPERS_ENABLE_MASK;
+    HAL_GPIO_Init(STEPPERS_ENABLE_PORT, &GPIO_Init);
 
     GPIO_Init.Pin = STEP_MASK;
     HAL_GPIO_Init(STEP_PORT, &GPIO_Init);
@@ -832,7 +849,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "210716";
+    hal.driver_version = "210727";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
@@ -1046,7 +1063,7 @@ void EXTI1_IRQHandler(void)
             DEBOUNCE_TIMER->EGR = TIM_EGR_UG;
             DEBOUNCE_TIMER->CR1 |= TIM_CR1_CEN; // Start debounce timer (40ms)
         } else
-            hal.limit.interrupt_callback(limitsGetState());
+            hal.limits.interrupt_callback(limitsGetState());
 #endif
     }
 }

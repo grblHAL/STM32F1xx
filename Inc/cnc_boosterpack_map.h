@@ -54,9 +54,6 @@
 #if N_AXIS > 3
 #define A_STEP_PIN      3
 #define A_STEP_BIT      (1<<A_STEP_PIN)
-#define STEP_MASK       (X_STEP_BIT|Y_STEP_BIT|Z_STEP_BIT|A_STEP_BIT) // All step bits
-#else
-#define STEP_MASK       (X_STEP_BIT|Y_STEP_BIT|Z_STEP_BIT) // All step bits
 #endif
 #define STEP_OUTMODE GPIO_MAP
 
@@ -71,17 +68,14 @@
 #if N_AXIS > 3
 #define A_DIRECTION_PIN     7
 #define A_DIRECTION_BIT     (1<<A_DIRECTION_PIN)
-#define DIRECTION_MASK      (X_DIRECTION_BIT|Y_DIRECTION_BIT|Z_DIRECTION_BIT|A_DIRECTION_BIT) // All direction bits
-#else
-#define DIRECTION_MASK      (X_DIRECTION_BIT|Y_DIRECTION_BIT|Z_DIRECTION_BIT) // All direction bits
 #endif
 #define DIRECTION_OUTMODE   GPIO_MAP
 
 // Define stepper driver enable/disable output pin.
-#define STEPPERS_DISABLE_PORT   GPIOA
-#define STEPPERS_DISABLE_PIN    15
-#define STEPPERS_DISABLE_BIT    (1<<STEPPERS_DISABLE_PIN)
-#define STEPPERS_DISABLE_MASK   STEPPERS_DISABLE_BIT
+#define STEPPERS_ENABLE_PORT   GPIOA
+#define STEPPERS_ENABLE_PIN    15
+#define STEPPERS_ENABLE_BIT    (1<<STEPPERS_ENABLE_PIN)
+#define STEPPERS_ENABLE_MASK   STEPPERS_ENABLE_BIT
 
 // Define homing/hard limit switch input pins.
 #define LIMIT_PORT       GPIOB
@@ -94,9 +88,6 @@
 #if N_AXIS > 3
 #define A_LIMIT_PIN      15
 #define A_LIMIT_BIT      (1<<A_LIMIT_PIN)
-#define LIMIT_MASK       (X_LIMIT_BIT|Y_LIMIT_BIT|Z_LIMIT_BIT|A_LIMIT_BIT) // All limit bits
-#else
-#define LIMIT_MASK       (X_LIMIT_BIT|Y_LIMIT_BIT|Z_LIMIT_BIT) // All limit bits
 #endif
 #define LIMIT_INMODE GPIO_SHIFT12
 

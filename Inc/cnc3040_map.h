@@ -41,14 +41,7 @@
 #define B_STEP_PIN      9
 #define B_STEP_BIT      (1<<B_STEP_PIN)
 #endif
-#if N_AXIS == 5
-#define STEP_MASK       (X_STEP_BIT|Y_STEP_BIT|Z_STEP_BIT|A_STEP_BIT|B_STEP_BIT) // All step bits
-#elif N_AXIS == 4
-#define STEP_MASK       (X_STEP_BIT|Y_STEP_BIT|Z_STEP_BIT|A_STEP_BIT) // All step bits
-#else
-#define STEP_MASK       (X_STEP_BIT|Y_STEP_BIT|Z_STEP_BIT) // All step bits
-#endif
-#define STEP_OUTMODE GPIO_MAP
+#define STEP_OUTMODE    GPIO_MAP
 
 // Define step direction output pins.
 #define DIRECTION_PORT      GPIOA
@@ -66,31 +59,23 @@
 #define B_DIRECTION_PIN     10
 #define B_DIRECTION_BIT     (1<<B_DIRECTION_PIN)
 #endif
-#if N_AXIS == 5
-#define DIRECTION_MASK      (X_DIRECTION_BIT|Y_DIRECTION_BIT|Z_DIRECTION_BIT|A_DIRECTION_BIT|B_DIRECTION_BIT) // All direction bits
-#elif N_AXIS == 4
-#define DIRECTION_MASK      (X_DIRECTION_BIT|Y_DIRECTION_BIT|Z_DIRECTION_BIT|A_DIRECTION_BIT) // All direction bits
-#else
-#define DIRECTION_MASK      (X_DIRECTION_BIT|Y_DIRECTION_BIT|Z_DIRECTION_BIT) // All direction bits
-#endif
 #define DIRECTION_OUTMODE   GPIO_MAP
 
 // Define stepper driver enable/disable output pin.
-#define STEPPERS_DISABLE_PORT   GPIOB
-#define STEPPERS_DISABLE_PIN    9
-#define STEPPERS_DISABLE_BIT    (1<<STEPPERS_DISABLE_PIN)
-#define STEPPERS_DISABLE_MASK   STEPPERS_DISABLE_BIT
+#define STEPPERS_ENABLE_PORT   GPIOB
+#define STEPPERS_ENABLE_PIN    9
+#define STEPPERS_ENABLE_BIT    (1<<STEPPERS_ENABLE_PIN)
+#define STEPPERS_ENABLE_MASK   STEPPERS_ENABLE_BIT
 
 // Define homing/hard limit switch input pins.
-#define LIMIT_PORT       GPIOB
-#define X_LIMIT_PIN      10
-#define Y_LIMIT_PIN      11
-#define Z_LIMIT_PIN      12
-#define X_LIMIT_BIT      (1<<X_LIMIT_PIN)
-#define Y_LIMIT_BIT      (1<<Y_LIMIT_PIN)
-#define Z_LIMIT_BIT      (1<<Z_LIMIT_PIN)
-#define LIMIT_MASK       (X_LIMIT_BIT|Y_LIMIT_BIT|Z_LIMIT_BIT) // All limit bits
-#define LIMIT_INMODE GPIO_SHIFT10
+#define LIMIT_PORT      GPIOB
+#define X_LIMIT_PIN     10
+#define Y_LIMIT_PIN     11
+#define Z_LIMIT_PIN     12
+#define X_LIMIT_BIT     (1<<X_LIMIT_PIN)
+#define Y_LIMIT_BIT     (1<<Y_LIMIT_PIN)
+#define Z_LIMIT_BIT     (1<<Z_LIMIT_PIN)
+#define LIMIT_INMODE    GPIO_SHIFT10
 
   // Define spindle enable and spindle direction output pins.
 #define SPINDLE_ENABLE_PORT         GPIOB

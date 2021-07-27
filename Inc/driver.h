@@ -112,6 +112,8 @@
   #include "cnc3040_map.h"
 #elif defined(BOARD_MY_MACHINE)
   #include "my_machine_map.h"
+#elif defined(BTT_SKR_MINI_E3_V20)
+  #include "btt_skr_mini_e3_2.0_map.h"
 #else // default board
   #include "generic_map.h"
 #endif
