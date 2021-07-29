@@ -46,6 +46,16 @@ static uint16_t serialRxFree (void)
 }
 
 //
+// Returns number of characters in serial input buffer
+//
+static uint16_t serialRxCount (void)
+{
+    uint32_t tail = rxbuf.tail, head = rxbuf.head;
+
+    return BUFCOUNT(head, tail, RX_BUFFER_SIZE);
+}
+
+//
 // Flushes the serial input buffer
 //
 void serialRxFlush (void)
@@ -112,7 +122,7 @@ static void serialWriteS (const char *s)
 //
 // Writes a number of characters from string to the serial output stream followed by EOL, blocks if buffer full
 //
-/*
+
 static void serialWrite(const char *s, uint16_t length)
 {
     char *ptr = (char *)s;
@@ -120,7 +130,26 @@ static void serialWrite(const char *s, uint16_t length)
     while(length--)
         serialPutC(*ptr++);
 }
-*/
+
+//
+// Flushes the serial output buffer
+//
+static void serialTxFlush (void)
+{
+    USART1->CR1 &= ~USART_CR1_TXEIE;     // Disable TX interrupts
+    txbuf.tail = txbuf.head;
+}
+
+//
+// Returns number of characters pending transmission
+//
+static uint16_t serialTxCount (void)
+{
+    uint32_t tail = txbuf.tail, head = txbuf.head;
+
+    return BUFCOUNT(head, tail, TX_BUFFER_SIZE) + (USART1->SR & USART_SR_TC ? 0 : 1);
+}
+
 //
 // serialGetC - returns -1 if no data available
 //
@@ -160,8 +189,12 @@ const io_stream_t *serialInit (void)
         .read = serialGetC,
         .write = serialWriteS,
         .write_char = serialPutC,
+        .write_n =  serialWrite,
         .write_all = serialWriteS,
         .get_rx_buffer_free = serialRxFree,
+        .get_rx_buffer_count = serialRxCount,
+        .get_tx_buffer_count = serialTxCount,
+        .reset_write_buffer = serialTxFlush,
         .reset_read_buffer = serialRxFlush,
         .cancel_read_buffer = serialRxCancel,
         .suspend_read = serialSuspendInput,
@@ -182,7 +215,7 @@ const io_stream_t *serialInit (void)
     GPIO_InitStructure.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-    __HAL_AFIO_REMAP_USART1_ENABLE();
+//    __HAL_AFIO_REMAP_USART1_ENABLE();
 
     USART1->CR1 |= (USART_CR1_RE|USART_CR1_TE);
     USART1->BRR = UART_BRR_SAMPLING16(HAL_RCC_GetPCLK2Freq(), 115200);

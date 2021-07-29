@@ -27,5 +27,6 @@
 #include "grbl/stream.h"
 
 const io_stream_t *usbInit (void);
+void usbBufferInput (uint8_t *data, uint32_t length);
 
 /*EOF*/

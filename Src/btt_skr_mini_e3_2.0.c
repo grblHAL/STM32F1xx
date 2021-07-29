@@ -44,9 +44,9 @@ TMC_uart_write_datagram_t *tmc_uart_read (trinamic_motor_t driver, TMC_uart_read
 
     tmc_uart.reset_read_buffer();
 
-    // Wait for response with 2ms timeout
+    // Wait for response with 3ms timeout
     while(tmc_uart.get_rx_buffer_count() < 8) {
-        if(hal.get_elapsed_ticks() - ms >= 2)
+        if(hal.get_elapsed_ticks() - ms >= 3)
             break;
     }
 
@@ -71,6 +71,8 @@ TMC_uart_write_datagram_t *tmc_uart_read (trinamic_motor_t driver, TMC_uart_read
 void tmc_uart_write (trinamic_motor_t driver, TMC_uart_write_datagram_t *dgr)
 {
     tmc_uart.write_n((char *)dgr->data, sizeof(TMC_uart_write_datagram_t));
+
+    while(tmc_uart.get_tx_buffer_count());	// Wait while the datagram is delivered
 }
 
 void board_init (void)

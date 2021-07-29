@@ -3,7 +3,7 @@
 
   Part of grblHAL driver for STM32F103C8
 
-  Copyright (c) 2018-2020 Terje Io
+  Copyright (c) 2018-2021 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,8 +35,13 @@
 #define I2C_ADR_I2CBRIDGE 0x47
 #endif
 
+#define I2Cport(p) I2CportI(p)
+#define I2CportI(p) I2C ## p
+
+#define I2CPORT I2Cport(I2C_PORT)
+
 static I2C_HandleTypeDef i2c_port = {
-    .Instance = I2C2,
+    .Instance = I2CPORT,
     .Init.ClockSpeed = 100000,
     .Init.DutyCycle = I2C_DUTYCYCLE_2,
     .Init.OwnAddress1 = 0,
@@ -47,33 +52,28 @@ static I2C_HandleTypeDef i2c_port = {
     .Init.NoStretchMode = I2C_NOSTRETCH_DISABLE
 };
 
-/**
-  * @brief This function handles I2C2 event interrupt.
-  */
+#if I2C_PORT == 1
+void I2C1_EV_IRQHandler(void)
+{
+  HAL_I2C_EV_IRQHandler(&i2c_port);
+}
+
+void I2C1_ER_IRQHandler(void)
+{
+  HAL_I2C_ER_IRQHandler(&i2c_port);
+}
+#else
 void I2C2_EV_IRQHandler(void)
 {
-  /* USER CODE BEGIN I2C2_EV_IRQn 0 */
-
-  /* USER CODE END I2C2_EV_IRQn 0 */
   HAL_I2C_EV_IRQHandler(&i2c_port);
-  /* USER CODE BEGIN I2C2_EV_IRQn 1 */
-
-  /* USER CODE END I2C2_EV_IRQn 1 */
 }
 
-/**
-  * @brief This function handles I2C2 error interrupt.
-  */
 void I2C2_ER_IRQHandler(void)
 {
-  /* USER CODE BEGIN I2C2_ER_IRQn 0 */
-
-  /* USER CODE END I2C2_ER_IRQn 0 */
   HAL_I2C_ER_IRQHandler(&i2c_port);
-  /* USER CODE BEGIN I2C2_ER_IRQn 1 */
-
-  /* USER CODE END I2C2_ER_IRQn 1 */
 }
+#endif
+
 
 #if EEPROM_ENABLE
 
@@ -180,21 +180,40 @@ TMC_spi_status_t tmc_spi_write (trinamic_motor_t driver, TMC_spi_datagram_t *reg
 
 void i2c_init (void)
 {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    __HAL_RCC_I2C2_CLK_ENABLE();
-
-    GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+#if I2C_PORT == 1
+    GPIO_InitTypeDef GPIO_InitStruct = {
+        .Pin = GPIO_PIN_6|GPIO_PIN_7,
+        .Mode = GPIO_MODE_AF_OD,
+        .Pull = GPIO_PULLUP,
+        .Speed = GPIO_SPEED_FREQ_HIGH
+    };
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    __HAL_AFIO_REMAP_I2C1_ENABLE();
+    __HAL_RCC_I2C1_CLK_ENABLE();
+    __HAL_AFIO_REMAP_I2C1_DISABLE();
+
+    HAL_I2C_Init(&i2c_port);
+
+    HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
+    HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
+#endif
+
+#if I2C_PORT == 2
+    GPIO_InitTypeDef GPIO_InitStruct = {
+        .Pin = GPIO_PIN_10|GPIO_PIN_11,
+        .Mode = GPIO_MODE_AF_OD,
+        .Pull = GPIO_PULLUP,
+        .Speed = GPIO_SPEED_FREQ_HIGH,
+    };
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    __HAL_RCC_I2C2_CLK_ENABLE();
 
     HAL_I2C_Init(&i2c_port);
 
     HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
     HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
+#endif
 }
 
 #endif
