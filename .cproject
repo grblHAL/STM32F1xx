@@ -99,13 +99,17 @@
                                     									
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
-                                    									
                                     <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/App"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/Target"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Core/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="../FatFs"/>
                                     									
@@ -255,6 +259,8 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
                         						
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="USB_DEVICE"/>
+                        						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eeprom"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="grbl"/>
@@ -369,17 +375,21 @@
                                     									
                                     <listOptionValue builtIn="false" value="../grbl"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F1xx/Include"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/App"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/Target"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Core/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/GRBL Driver STM32F103C8}&quot;"/>
                                     								
@@ -521,6 +531,8 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
                         						
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="USB_DEVICE"/>
+                        						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eeprom"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="grbl"/>
@@ -635,19 +647,25 @@
                                     									
                                     <listOptionValue builtIn="false" value="../grbl"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F1xx/Include"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/App"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/Target"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Core/Inc"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
+                                    									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/GRBL Driver STM32F103C8}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../FatFs"/>
                                     								
                                 </option>
                                 								
@@ -785,7 +803,9 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
                         						
-                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="StartupRC"/>
+                        						
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="USB_DEVICE"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eeprom"/>
                         						
@@ -887,13 +907,13 @@
                                     									
                                     <listOptionValue builtIn="false" value="USE_HAL_DRIVER"/>
                                     									
-                                    <listOptionValue builtIn="false" value="STM32F103xB"/>
-                                    									
                                     <listOptionValue builtIn="false" value="RX_BUFFER_SIZE=512"/>
                                     									
                                     <listOptionValue builtIn="false" value="NVS_SIZE=1536"/>
                                     									
                                     <listOptionValue builtIn="false" value="DEBUG"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="STM32F103xE"/>
                                     								
                                 </option>
                                 								
@@ -903,19 +923,25 @@
                                     									
                                     <listOptionValue builtIn="false" value="../grbl"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
+                                    									
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32F1xx/Include"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Drivers/CMSIS/Include"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/App"/>
                                     									
-                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"/>
-                                    									
-                                    <listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>
+                                    <listOptionValue builtIn="false" value="../USB_DEVICE/Target"/>
                                     									
                                     <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Core/Inc"/>
                                     									
+                                    <listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
+                                    									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/GRBL Driver STM32F103C8}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="../FatFs"/>
                                     								
                                 </option>
                                 								
@@ -1053,7 +1079,9 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Src"/>
                         						
-                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Startup"/>
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="StartupRC"/>
+                        						
+                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="USB_DEVICE"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eeprom"/>
                         						

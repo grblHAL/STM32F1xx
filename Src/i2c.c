@@ -182,7 +182,7 @@ void i2c_init (void)
 {
 #if I2C_PORT == 1
     GPIO_InitTypeDef GPIO_InitStruct = {
-        .Pin = GPIO_PIN_6|GPIO_PIN_7,
+        .Pin = GPIO_PIN_6|GPIO_PIN_7, // SCL|SDA
         .Mode = GPIO_MODE_AF_OD,
         .Pull = GPIO_PULLUP,
         .Speed = GPIO_SPEED_FREQ_HIGH

@@ -62,7 +62,7 @@ TMC_uart_write_datagram_t *tmc_uart_read (trinamic_motor_t driver, TMC_uart_read
     } else
         wdgr.msg.addr.value = 0xFF;
 
-    dly = 150;
+    dly = 5000;
     while(--dly);
 
     return &wdgr;
@@ -77,8 +77,11 @@ void tmc_uart_write (trinamic_motor_t driver, TMC_uart_write_datagram_t *dgr)
 
 void board_init (void)
 {
+#ifdef SERIAL2_MOD
     memcpy(&tmc_uart, serial2Init(), sizeof(io_stream_t));
-
+#else
+    memcpy(&tmc_uart, serialInit(), sizeof(io_stream_t));
+#endif
     tmc_uart.set_enqueue_rt_handler(stream_buffer_all);
 }
 

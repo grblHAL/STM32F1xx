@@ -155,13 +155,13 @@ void send_initial_clock_train(void)
 {
     unsigned int i = 10;
 
+    hspi1.Instance->CR1 |= SPI_BAUDRATEPRESCALER_256;
+
     /* Ensure CS is held high. */
     DESELECT();
 
     while(i--)
         xmit_spi(0xFF);
-
-    i = 0xFF;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -181,10 +181,13 @@ void power_on (void)
      */
 
     if(!init) {
+
+#ifdef SPI1_REMAP
         // Disable JTAG. NOTE: a power cycle is required after programming
         __HAL_AFIO_REMAP_SWJ_DISABLE();
 
         hal.delay_ms(10, NULL);
+#endif
 
         HAL_SPI_Init(&hspi1);
     }
@@ -200,7 +203,7 @@ static
 void set_max_speed(void)
 {
     hspi1.Instance->CR1 &= ~SPI_BAUDRATEPRESCALER_256;
-    hspi1.Instance->CR1 |= SPI_BAUDRATEPRESCALER_32; // should be able to go to 12Mhz...
+    hspi1.Instance->CR1 |= SPI_BAUDRATEPRESCALER_64; // should be able to go to 12Mhz...
 }
 
 static

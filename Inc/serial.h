@@ -30,7 +30,7 @@
 #define RX_BUFFER_HWM 900
 #define RX_BUFFER_LWM 300
 
-#if !USB_SERIAL_CDC
+#if !USB_SERIAL_CDC || defined(TRINAMIC_DEBUG)
 const io_stream_t *serialInit (void);
 #endif
 

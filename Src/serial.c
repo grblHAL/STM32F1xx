@@ -21,15 +21,16 @@
 
 */
 
+#include "serial.h"
+
 #include <string.h>
 
-#include "serial.h"
 #include "grbl/hal.h"
 #include "grbl/protocol.h"
 
 #include "main.h"
 
-#if !USB_SERIAL_CDC
+#if !USB_SERIAL_CDC || defined(TRINAMIC_DEBUG)
 
 static stream_rx_buffer_t rxbuf = {0};
 static stream_tx_buffer_t txbuf = {0};
@@ -445,7 +446,7 @@ const io_stream_t *serial2Init (void)
     __HAL_AFIO_REMAP_USART3_PARTIAL();
 
     USART->CR1 |= (USART_CR1_RE|USART_CR1_TE);
-    USART->BRR = UART_BRR_SAMPLING16(HAL_RCC_GetPCLK2Freq(), 115200);
+    USART->BRR = UART_BRR_SAMPLING16(HAL_RCC_GetPCLK1Freq(), 115200);
     USART->CR1 |= (USART_CR1_UE|USART_CR1_RXNEIE);
 
     HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
