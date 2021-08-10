@@ -61,7 +61,7 @@
 #define X_DIRECTION_PORT    GPIOB
 #define X_DIRECTION_PIN     12 //PB12
 #define Y_DIRECTION_PORT    GPIOB
-#define Y_DIRECTION_PIN     0  //PB2
+#define Y_DIRECTION_PIN     2  //PB2
 #define Z_DIRECTION_PORT    GPIOC
 #define Z_DIRECTION_PIN     3  //PC3 //********
 #define X_DIRECTION_BIT     (1<<X_DIRECTION_PIN)
@@ -112,8 +112,8 @@
 #define SPINDLE_DIRECTION_BIT   (1<<SPINDLE_DIRECTION_PIN)
 
 // Define spindle PWM output pin.
-#define SPINDLE_PWM_PORT        GPIOC
-#define SPINDLE_PWM_PIN         7 //PC7
+#define SPINDLE_PWM_PORT        GPIOA
+#define SPINDLE_PWM_PIN         8 //PC7
 #define SPINDLE_PWM_BIT         (1<<SPINDLE_PWM_PIN)
 
 // Define flood and mist coolant enable output pins.
