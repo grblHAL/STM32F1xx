@@ -75,6 +75,19 @@ void tmc_uart_write (trinamic_motor_t driver, TMC_uart_write_datagram_t *dgr)
     while(tmc_uart.get_tx_buffer_count());	// Wait while the datagram is delivered
 }
 
+static void btt_skr_mini_e3_enable_usb(void) {
+#if USB_SERIAL_CDC
+    /* PA14 must be set low to enable USB D+ */
+    GPIO_InitTypeDef GPIO_Init = {
+        .Mode = GPIO_MODE_OUTPUT_PP,
+        .Pin = GPIO_PIN_14,
+        .Speed = GPIO_SPEED_FREQ_LOW,
+    };
+    HAL_GPIO_Init(GPIOA, &GPIO_Init);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_14, GPIO_PIN_RESET);
+#endif
+}
+
 void board_init (void)
 {
 #ifdef SERIAL2_MOD
@@ -83,6 +96,7 @@ void board_init (void)
     memcpy(&tmc_uart, serialInit(), sizeof(io_stream_t));
 #endif
     tmc_uart.set_enqueue_rt_handler(stream_buffer_all);
+    btt_skr_mini_e3_enable_usb();
 }
 
 #endif
