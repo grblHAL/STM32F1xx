@@ -31,47 +31,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "main.h"
-#include "grbl/hal.h"
-#include "grbl/grbl.h"
-#include "grbl/nuts_bolts.h"
-
 #ifndef OVERRIDE_MY_MACHINE
 #include "my_machine.h"
 #endif
 
+#include "main.h"
+#include "grbl/hal.h"
+#include "grbl/grbl.h"
+#include "grbl/nuts_bolts.h"
+#include "grbl/driver_opts.h"
+
 #define BITBAND_PERI(x, b) (*((__IO uint8_t *) (PERIPH_BB_BASE + (((uint32_t)(volatile const uint32_t *)&(x)) - PERIPH_BASE)*32 + (b)*4)))
-
-// Configuration
-// Set value to 1 to enable, 0 to disable
-
-#ifndef USB_SERIAL_CDC
-#define USB_SERIAL_CDC      0 // for UART comms
-#endif
-#ifndef SDCARD_ENABLE
-#define SDCARD_ENABLE       0
-#endif
-#ifndef KEYPAD_ENABLE
-#define KEYPAD_ENABLE       0
-#endif
-#ifndef ODOMETER_ENABLE
-#define ODOMETER_ENABLE     0
-#endif
-#ifndef EEPROM_ENABLE
-#define EEPROM_ENABLE       0
-#endif
-#ifndef EEPROM_IS_FRAM
-#define EEPROM_IS_FRAM      0
-#endif
-#ifndef TRINAMIC_ENABLE
-#define TRINAMIC_ENABLE     0
-#endif
-#ifndef TRINAMIC_I2C
-#define TRINAMIC_I2C        0
-#endif
-#ifndef TRINAMIC_DEV
-#define TRINAMIC_DEV        0
-#endif
 
 // Define GPIO output mode options
 
@@ -99,14 +69,8 @@
 #define DEBOUNCE_TIMER TIM4
 
 #ifdef BOARD_CNC_BOOSTERPACK
-  #if N_AXIS > 3
-    #error Max number of axes is 3!
-  #endif
   #include "cnc_boosterpack_map.h"
 #elif defined(BOARD_CNC3040)
-  #if EEPROM_ENABLE
-    #error EEPROM plugin not supported!
-  #endif
   #include "cnc3040_map.h"
 #elif defined(BOARD_MY_MACHINE)
   #include "my_machine_map.h"

@@ -31,6 +31,8 @@
 #include "serial.h"
 
 #include "grbl/limits.h"
+#include "grbl/motor_pins.h"
+#include "grbl/pin_bits_masks.h"
 
 #ifdef I2C_PORT
 #include "i2c.h"
@@ -72,7 +74,6 @@ typedef union {
 } debounce_t;
 
 #include "grbl/stepdir_map.h"
-#include "grbl/motor_pins.h"
 
 static input_signal_t inputpin[] = {
     { .id = Input_Reset,          .port = RESET_PORT,         .pin = RESET_PIN,           .group = PinGroup_Control },
@@ -174,6 +175,14 @@ static probe_state_t probe = {
 #define KEYPAD_STROBE_BIT 0
 #endif
 
+#if !SAFETY_DOOR_ENABLE
+#define SAFETY_DOOR_BIT 0
+#endif
+
+#if CONTROL_MASK != (RESET_BIT+FEED_HOLD_BIT+CYCLE_START_BIT+SAFETY_DOOR_BIT)
+#error Interrupt enabled input pins must have unique pin numbers!
+#endif
+
 #define DRIVER_IRQMASK (LIMIT_MASK|CONTROL_MASK|KEYPAD_STROBE_BIT)
 
 #if DRIVER_IRQMASK != (LIMIT_MASK+CONTROL_MASK+KEYPAD_STROBE_BIT)
@@ -208,8 +217,8 @@ static void stepperEnable (axes_signals_t enable)
   #ifdef A_ENABLE_PIN
     BITBAND_PERI(A_ENABLE_PORT->ODR, A_ENABLE_PIN) = enable.a;
   #endif
-  #ifdef STEPPERS_B_DISABLE_PIN
-    BITBAND_PERI(B_ENABLE_PORT->ODR, STEPPERS_B_DISABLE_PIN) = enable.b;
+  #ifdef B_ENABLE_PIN
+    BITBAND_PERI(B_ENABLE_PORT->ODR, B_ENABLE_PIN) = enable.b;
   #endif
  #endif
 #endif
@@ -947,7 +956,7 @@ static bool driver_setup (settings_t *settings)
  // Spindle init
 
     if(hal.driver_cap.variable_spindle) {
-        GPIO_Init.Pin = SPINDLE_PWM_BIT;
+        GPIO_Init.Pin = 1 << SPINDLE_PWM_PIN;
         GPIO_Init.Mode = GPIO_MODE_AF_PP;
         HAL_GPIO_Init(SPINDLE_PWM_PORT, &GPIO_Init);
     }
@@ -971,7 +980,11 @@ static bool driver_setup (settings_t *settings)
     on_unknown_sys_command = grbl.on_unknown_sys_command;
     grbl.on_unknown_sys_command = jtag_enable;
 
+#if N_AXIS > 3
+    IOInitDone = settings->version == 20;
+#else
     IOInitDone = settings->version == 19;
+#endif
 
     hal.settings_changed(settings);
     hal.spindle.set_state((spindle_state_t){0}, 0.0f);
@@ -997,7 +1010,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "210808";
+    hal.driver_version = "210817";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
