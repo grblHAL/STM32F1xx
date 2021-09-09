@@ -875,6 +875,15 @@ static void enumeratePins (bool low_level, pin_info_ptr pin_info)
 
         pin_info(&pin);
     };
+
+#ifdef SPINDLE_PWM_TIMER_N
+    pin.pin = SPINDLE_PWM_PIN;
+    pin.function = Output_SpindlePWM;
+    pin.group = PinGroup_SpindlePWM;
+    pin.port = low_level ? (void *)SPINDLE_PWM_PORT : (void *)port2char(SPINDLE_PWM_PORT);
+    pin.description = NULL;
+    pin_info(&pin);
+#endif
 }
 
 static status_code_t jtag_enable (uint_fast16_t state, char *line)
@@ -1010,7 +1019,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "210817";
+    hal.driver_version = "210908";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
