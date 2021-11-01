@@ -30,10 +30,8 @@
 #include "usbd_cdc_if.h"
 #include "usb_device.h"
 
-static char txdata2[BLOCK_TX_BUFFER_SIZE]; // Secondary TX buffer (for double buffering)
-static bool use_tx2data = false;
 static stream_rx_buffer_t rxbuf = {0};
-static stream_block_tx_buffer_t txbuf = {0};
+static stream_block_tx_buffer2_t txbuf = {0};
 static enqueue_realtime_command_ptr enqueue_realtime_command = protocol_enqueue_realtime_command;
 
 //
@@ -53,7 +51,7 @@ static void usbRxFlush (void)
 {
     rxbuf.tail = rxbuf.head;
 // Flush output buffer too.
-    txbuf.s = use_tx2data ? txdata2 : txbuf.data;
+    txbuf.s = txbuf.use_tx2data ? txbuf.data2 : txbuf.data;
     txbuf.length = 0;
 }
 
@@ -74,7 +72,7 @@ static inline bool usb_write (void)
 {
     static uint8_t dummy = 0;
 
-    txbuf.s = use_tx2data ? txdata2 : txbuf.data;
+    txbuf.s = txbuf.use_tx2data ? txbuf.data2 : txbuf.data;
 
     while(CDC_Transmit_FS((uint8_t *)txbuf.s, txbuf.length) == USBD_BUSY) {
         if(!hal.stream_blocking_callback())
@@ -88,8 +86,8 @@ static inline bool usb_write (void)
         }
     }
 
-    use_tx2data = !use_tx2data;
-    txbuf.s = use_tx2data ? txdata2 : txbuf.data;
+    txbuf.use_tx2data = !txbuf.use_tx2data;
+    txbuf.s = txbuf.use_tx2data ? txbuf.data2 : txbuf.data;
     txbuf.length = 0;
 
     return true;
@@ -120,18 +118,59 @@ static void usbWriteS (const char *s)
 {
     size_t length = strlen(s);
 
-    if((length + txbuf.length) > txbuf.max_length) {
+    if(length == 0)
+        return;
+
+    if(txbuf.length && (txbuf.length + length) > txbuf.max_length) {
         if(!usb_write())
             return;
     }
 
-    memcpy(txbuf.s, s, length);
-    txbuf.length += length;
-    txbuf.s += length;
-
-    if(s[length - 1] == ASCII_LF) {
+    while(length > txbuf.max_length) {
+        txbuf.length = txbuf.max_length;
+        memcpy(txbuf.s, s, txbuf.length);
         if(!usb_write())
             return;
+        length -= txbuf.max_length;
+        s += txbuf.max_length;
+    }
+
+    if(length) {
+        memcpy(txbuf.s, s, length);
+        txbuf.length += length;
+        txbuf.s += length;
+        if(s[length - 1] == ASCII_LF)
+            usb_write();
+    }
+}
+
+//
+// Writes a number of characters from string to the USB output stream, blocks if buffer full
+//
+static void usbWrite (const char *s, uint16_t length)
+{
+    if(length == 0)
+        return;
+
+    if(txbuf.length && (txbuf.length + length) > txbuf.max_length) {
+        if(!usb_write())
+            return;
+    }
+
+    while(length > txbuf.max_length) {
+        txbuf.length = txbuf.max_length;
+        memcpy(txbuf.s, s, txbuf.length);
+        if(!usb_write())
+            return;
+        length -= txbuf.max_length;
+        s += txbuf.max_length;
+    }
+
+    if(length) {
+        memcpy(txbuf.s, s, length);
+        txbuf.length += length;
+        txbuf.s += length;
+        usb_write();
     }
 }
 
@@ -178,6 +217,7 @@ const io_stream_t *usbInit (void)
         .read = usbGetC,
         .write = usbWriteS,
         .write_char = usbPutC,
+        .write_n = usbWrite,
         .write_all = usbWriteS,
         .enqueue_rt_command = usbEnqueueRtCommand,
         .get_rx_buffer_free = usbRxFree,
