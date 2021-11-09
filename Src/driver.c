@@ -64,6 +64,24 @@
 #include "flash.h"
 #endif
 
+#if !I2C_STROBE_ENABLE
+#define I2C_STROBE_BIT 0
+#endif
+
+#if !SAFETY_DOOR_ENABLE
+#define SAFETY_DOOR_BIT 0
+#endif
+
+#if CONTROL_MASK != (RESET_BIT+FEED_HOLD_BIT+CYCLE_START_BIT+SAFETY_DOOR_BIT)
+#error Interrupt enabled input pins must have unique pin numbers!
+#endif
+
+#define DRIVER_IRQMASK (LIMIT_MASK|CONTROL_MASK|I2C_STROBE_BIT)
+
+#if DRIVER_IRQMASK != (LIMIT_MASK+CONTROL_MASK+I2C_STROBE_BIT)
+#error Interrupt enabled input pins must have unique pin numbers!
+#endif
+
 typedef union {
     uint8_t mask;
     struct {
@@ -85,8 +103,8 @@ static input_signal_t inputpin[] = {
 #ifdef PROBE_PIN
     { .id = Input_Probe,          .port = PROBE_PORT,         .pin = PROBE_PIN,           .group = PinGroup_Probe },
 #endif
-#ifdef KEYPAD_STROBE_PIN
-    { .id = Input_KeypadStrobe,   .port = KEYPAD_PORT,        .pin = KEYPAD_STROBE_PIN,   .group = PinGroup_Keypad },
+#ifdef I2C_STROBE_PIN
+    { .id = Input_KeypadStrobe,   .port = I2C_STROBE_PORT,        .pin = I2C_STROBE_PIN,   .group = PinGroup_Keypad },
 #endif
 #ifdef MODE_SWITCH_PIN
     { .id = Input_ModeSelect,     .port = MODE_PORT,          .pin = MODE_SWITCH_PIN,     .group = PinGroup_MPG },
@@ -171,22 +189,20 @@ static probe_state_t probe = {
     .connected = On
 };
 
-#if KEYPAD_ENABLE == 0
-#define KEYPAD_STROBE_BIT 0
-#endif
+#if I2C_STROBE_ENABLE
 
-#if !SAFETY_DOOR_ENABLE
-#define SAFETY_DOOR_BIT 0
-#endif
+static driver_irq_handler_t i2c_strobe = { .type = IRQ_I2C_Strobe };
 
-#if CONTROL_MASK != (RESET_BIT+FEED_HOLD_BIT+CYCLE_START_BIT+SAFETY_DOOR_BIT)
-#error Interrupt enabled input pins must have unique pin numbers!
-#endif
+static bool irq_claim (irq_type_t irq, uint_fast8_t id, irq_callback_ptr handler)
+{
+    bool ok;
 
-#define DRIVER_IRQMASK (LIMIT_MASK|CONTROL_MASK|KEYPAD_STROBE_BIT)
+    if((ok = irq == IRQ_I2C_Strobe && i2c_strobe.callback == NULL))
+        i2c_strobe.callback = handler;
 
-#if DRIVER_IRQMASK != (LIMIT_MASK+CONTROL_MASK+KEYPAD_STROBE_BIT)
-#error Interrupt enabled input pins must have unique pin numbers!
+    return ok;
+}
+
 #endif
 
 static void spindle_set_speed (uint_fast16_t pwm_value);
@@ -1019,7 +1035,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "210930";
+    hal.driver_version = "211107";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
@@ -1060,6 +1076,9 @@ bool driver_init (void)
 
     hal.irq_enable = __enable_irq;
     hal.irq_disable = __disable_irq;
+#if I2C_STROBE_ENABLE
+    hal.irq_claim = irq_claim;
+#endif
     hal.set_bits_atomic = bitsSetAtomic;
     hal.clear_bits_atomic = bitsClearAtomic;
     hal.set_value_atomic = valueSetAtomic;
@@ -1403,9 +1422,9 @@ void EXTI15_10_IRQHandler(void)
                 hal.limits.interrupt_callback(limitsGetState());
         }
 #endif
-#if KEYPAD_ENABLE
-        if(ifg & KEYPAD_STROBE_BIT)
-            keypad_keyclick_handler(BITBAND_PERI(KEYPAD_PORT->IDR, KEYPAD_STROBE_PIN));
+#if I2C_STROBE_ENABLE
+        if((ifg & I2C_STROBE_BIT) && i2c_strobe.callback)
+            i2c_strobe.callback(0, BITBAND_PERI(I2C_STROBE_PORT->IDR, I2C_STROBE_PIN) == 0);
 #endif
     }
 }

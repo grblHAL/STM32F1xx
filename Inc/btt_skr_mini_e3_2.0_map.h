@@ -117,9 +117,9 @@
 #define PROBE_PORT              GPIOC
 #define PROBE_PIN               14 //PC14
 
-#if KEYPAD_ENABLE
-#define KEYPAD_PORT             GPIOA
-#define KEYPAD_STROBE_PIN       1 //PA1
+#if I2C_STROBE_ENABLE
+#define I2C_STROBE_PORT         GPIOA
+#define I2C_STROBE_PIN          1 //PA1
 #endif
 
 #if SDCARD_ENABLE

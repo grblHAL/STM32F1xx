@@ -27,7 +27,7 @@
 
 #include "grbl.h"
 
-#if KEYPAD_ENABLE
+#if KEYPAD_ENABLE == 1
 #include "keypad/keypad.h"
 #endif
 
@@ -98,7 +98,7 @@ nvs_transfer_result_t i2c_nvs_transfer (nvs_transfer_t *i2c, bool read)
 
 #endif
 
-#if KEYPAD_ENABLE
+#if KEYPAD_ENABLE == 1
 
 static uint8_t keycode = 0;
 static keycode_callback_ptr keypad_callback = NULL;

@@ -109,8 +109,10 @@
 #endif
 #endif
 
-#if KEYPAD_ENABLE && !defined(KEYPAD_PORT)
+#if KEYPAD_ENABLE == 1 && !defined(I2C_STROBE_PORT)
 #error Keypad plugin not supported!
+#elif I2C_STROBE_ENABLE && !defined(I2C_STROBE_PORT)
+#error I2C strobe not supported!
 #endif
 
 #if SDCARD_ENABLE && !defined(SD_CS_PORT)

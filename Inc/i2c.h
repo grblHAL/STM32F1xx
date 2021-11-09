@@ -26,7 +26,7 @@
 #include "driver.h"
 #include "grbl/plugins.h"
 
-#if KEYPAD_ENABLE
+#if KEYPAD_ENABLE == 1
 
 #include "keypad/keypad.h"
 
