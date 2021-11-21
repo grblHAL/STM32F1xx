@@ -404,7 +404,7 @@ static control_signals_t systemGetState (void)
     signals.reset = BITBAND_PERI(CONTROL_PORT->IDR, RESET_PIN);
     signals.feed_hold = BITBAND_PERI(CONTROL_PORT->IDR, FEED_HOLD_PIN);
     signals.cycle_start = BITBAND_PERI(CONTROL_PORT->IDR, CYCLE_START_PIN);
- #ifdef ENABLE_SAFETY_DOOR_INPUT_PIN
+ #ifdef SAFETY_DOOR_PIN
     signals.safety_door_ajar = BITBAND_PERI(CONTROL_PORT->IDR, SAFETY_DOOR_PIN);
  #endif
 #elif CONTROL_INMODE == GPIO_MAP
@@ -412,12 +412,12 @@ static control_signals_t systemGetState (void)
     signals.reset = (bits & RESET_BIT) != 0;
     signals.feed_hold = (bits & FEED_HOLD_BIT) != 0;
     signals.cycle_start = (bits & CYCLE_START_BIT) != 0;
- #ifdef ENABLE_SAFETY_DOOR_INPUT_PIN
+ #ifdef SAFETY_DOOR_PIN
     signals.safety_door_ajar = (bits & SAFETY_DOOR_BIT) != 0;
  #endif
 #else
     signals.value = (uint8_t)((CONTROL_PORT->IDR & CONTROL_MASK) >> CONTROL_INMODE);
- #ifndef ENABLE_SAFETY_DOOR_INPUT_PIN
+ #ifndef SAFETY_DOOR_PIN
  	signals.safety_door_ajar = settings.control_invert.safety_door_ajar;
  #endif
 #endif
@@ -1005,11 +1005,7 @@ static bool driver_setup (settings_t *settings)
     on_unknown_sys_command = grbl.on_unknown_sys_command;
     grbl.on_unknown_sys_command = jtag_enable;
 
-#if N_AXIS > 3
-    IOInitDone = settings->version == 20;
-#else
-    IOInitDone = settings->version == 19;
-#endif
+    IOInitDone = settings->version == 21;
 
     hal.settings_changed(settings);
     hal.spindle.set_state((spindle_state_t){0}, 0.0f);
@@ -1035,7 +1031,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "211107";
+    hal.driver_version = "211121";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
@@ -1137,7 +1133,7 @@ bool driver_init (void)
 
     // No need to move version check before init.
     // Compiler will fail any signature mismatch for existing entries.
-    return hal.version == 8;
+    return hal.version == 9;
 }
 
 /* interrupt handlers */
