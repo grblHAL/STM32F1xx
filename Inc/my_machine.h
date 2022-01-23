@@ -30,6 +30,7 @@
 // Uncomment to enable.
 
 #define USB_SERIAL_CDC       1 // Serial communication via native USB. Comment out for UART communication.
+//#define SAFETY_DOOR_ENABLE 1 // Enable safety door input.
 //#define SDCARD_ENABLE      1 // Run gcode programs from SD card, requires sdcard plugin.
 //#define KEYPAD_ENABLE      1 // Set to 1 for I2C keypad, 2 for other input such as serial data
 //#define ODOMETER_ENABLE    1 // Odometer plugin.

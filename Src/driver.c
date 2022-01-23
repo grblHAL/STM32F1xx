@@ -1023,6 +1023,14 @@ static bool driver_setup (settings_t *settings)
 
 bool driver_init (void)
 {
+#ifdef HAS_BOOTLOADER
+    extern uint8_t _FLASH_VectorTable;
+    __disable_irq();
+    SCB->VTOR = (uint32_t)&_FLASH_VectorTable;
+    __DSB();
+    __enable_irq();
+#endif
+
     // Enable EEPROM and serial port here for Grbl to be able to configure itself and report any errors
 
     // GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE); // ??? Disable JTAG and SWD!?? Bug?
@@ -1034,7 +1042,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "220111";
+    hal.driver_version = "220121";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
