@@ -658,11 +658,9 @@ void settings_changed (settings_t *settings)
 
     if(IOInitDone) {
 
-        GPIO_InitTypeDef GPIO_Init;
-
-        GPIO_Init.Speed = GPIO_SPEED_FREQ_HIGH;
-
-        stepperEnable(settings->steppers.deenergize);
+        GPIO_InitTypeDef GPIO_Init = {
+            .Speed = GPIO_SPEED_FREQ_HIGH
+        };
 
         if(hal.spindle.get_state == spindleGetState)
             spindleConfig();
@@ -1048,7 +1046,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "220703";
+    hal.driver_version = "220710";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
