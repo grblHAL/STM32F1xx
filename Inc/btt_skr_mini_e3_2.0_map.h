@@ -58,7 +58,7 @@
 #define Y_DIRECTION_PORT        GPIOB
 #define Y_DIRECTION_PIN         2  //PB2
 #define Z_DIRECTION_PORT        GPIOC
-#define Z_DIRECTION_PIN         3  //PC3 //********
+#define Z_DIRECTION_PIN         5  //PC5
 #define DIRECTION_OUTMODE       GPIO_BITBAND
 
 // Define stepper driver enable/disable output pin.
@@ -89,13 +89,13 @@
 
   // Define spindle enable and spindle direction output pins.
 #define SPINDLE_ENABLE_PORT     GPIOC
-#define SPINDLE_ENABLE_PIN      6 //PC6
+#define SPINDLE_ENABLE_PIN      7 //PC7
 #define SPINDLE_DIRECTION_PORT  GPIOC
 #define SPINDLE_DIRECTION_PIN   6 //PC6
 
 // Define spindle PWM output pin.
 #define SPINDLE_PWM_PORT        GPIOA
-#define SPINDLE_PWM_PIN         8 //PC7
+#define SPINDLE_PWM_PIN         8 //PA8
 
 // Define flood and mist coolant enable output pins.
 #define COOLANT_FLOOD_PORT      GPIOC
@@ -107,9 +107,9 @@
 #define CONTROL_PORT            GPIOC
 #define RESET_PIN               15 //PC15
 #define FEED_HOLD_PIN           13 //PC13
-#define CYCLE_START_PIN         3 //PC3
+#define CYCLE_START_PIN         12 //PC12
 #if SAFETY_DOOR_ENABLE
-#define SAFETY_DOOR_PIN         12 //PC12
+#define SAFETY_DOOR_PIN         3 //PC3
 #endif
 #define CONTROL_INMODE GPIO_MAP
 
