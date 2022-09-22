@@ -6,15 +6,15 @@ Delete the skeleton `diskio.c` driver file in the FatFs folder and edit `ffconf.
 
 Set `FF_FS_READONLY` to `1`.
 
-Set `FF_CODE_PAGE` to a codepage small enough to fit in flash. I have tested with `850`.
+Set `FF_CODE_PAGE` to a codepage small enough to fit in flash. It compiles with `850`.
 
 Set `FF_USE_LFN` to `1` or another suitable value.
 
 Other options may be edited as well depending on your needs.
 
-__NOTE:__ The `diskio.c` implementation provided as part of this driver has been tested with FatFs `R0.13c`.
+__NOTE:__ The `diskio.c` implementation provided as part of this compiles with FatFs `R0.14c` - but I have not tested with it.
 
 __NOTE:__ I have tested with a 10K pullup connected to `MOSI (PB5)`, not sure if it is really needed...
 
 ---
-2019-08-03
+2022-09-22
