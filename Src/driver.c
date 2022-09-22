@@ -204,6 +204,7 @@ static bool irq_claim (irq_type_t irq, uint_fast8_t id, irq_callback_ptr handler
 
 #endif
 
+void disk_timerproc (void);
 static void spindle_set_speed (uint_fast16_t pwm_value);
 
 static void driver_delay (uint32_t ms, void (*callback)(void))
