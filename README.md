@@ -10,10 +10,10 @@ See the Wiki-page for [compiling grblHAL](https://github.com/grblHAL/core/wiki/C
 
 Available driver options can be found [here](Inc/my_machine.h).
 
-__NOTE:__ Non F103 variants must have 128KB of flash! The .ioc design file is not included as modifying the project via the designer requires a bit of cleanup after. The STM HAL is bypassed for all time critical code and to avoid bloat.  
+__NOTE:__ F103 variant must have 128KB of flash, some chinese clones of F103C8 has. The .ioc design file is not included as modifying the project via the designer requires a bit of cleanup after. The STM HAL is bypassed for all time critical code and to avoid bloat.  
 __NOTE:__ The SD card plugin requires the SPI1 port to be remapped, disabling the JTAG/SWJ programming interfaces. This will be done on the first mount operation (via a `$FM` system command) causing the processor to hang. A power cycle is then required to get it working again.
 
 To reenable programming a special system command, `$PGM`, can be used - issue this followed by a hard reset or power cycle to do so.
 
 ---
-2021-08-08
+2022-09-28
