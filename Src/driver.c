@@ -497,17 +497,26 @@ static void spindle_set_speed (uint_fast16_t pwm_value)
         if(settings.spindle.flags.enable_rpm_controlled)
             spindle_off();
         if(spindle_pwm.always_on) {
-            SPINDLE_PWM_TIMER->CCR1 = spindle_pwm.off_value;
+            SPINDLE_PWM_TIMER_CCR = spindle_pwm.off_value;
+#if SPINDLE_PWM_TIMER_N == 1
             SPINDLE_PWM_TIMER->BDTR |= TIM_BDTR_MOE;
+#endif
+            SPINDLE_PWM_TIMER_CCR = pwm_value;
         } else
-        	SPINDLE_PWM_TIMER->BDTR &= ~TIM_BDTR_MOE; // Set PWM output low
+#if SPINDLE_PWM_TIMER_N == 1
+            SPINDLE_PWM_TIMER->BDTR &= ~TIM_BDTR_MOE; // Set PWM output low
+#else
+            SPINDLE_PWM_TIMER_CCR = 0;
+#endif
     } else {
         if(!pwmEnabled) {
             spindle_on();
             pwmEnabled = true;
         }
-        SPINDLE_PWM_TIMER->CCR1 = pwm_value;
+        SPINDLE_PWM_TIMER_CCR = pwm_value;
+#if SPINDLE_PWM_TIMER_N == 1
         SPINDLE_PWM_TIMER->BDTR |= TIM_BDTR_MOE;
+#endif
     }
 }
 
@@ -566,19 +575,21 @@ bool spindleConfig (void)
 
         TIM_Base_SetConfig(SPINDLE_PWM_TIMER, &timerInitStructure);
 
-        SPINDLE_PWM_TIMER->CCER &= ~TIM_CCER_CC1E;
-        SPINDLE_PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M|TIM_CCMR1_CC1S);
-        SPINDLE_PWM_TIMER->CCMR1 |= TIM_CCMR1_OC1M_1|TIM_CCMR1_OC1M_2;
-        SPINDLE_PWM_TIMER->CCR1 = 0;
-        if(settings.spindle.invert.pwm) {
-            SPINDLE_PWM_TIMER->CCER |= TIM_CCER_CC1P;
-            SPINDLE_PWM_TIMER->CR2 |= TIM_CR2_OIS1;
-        } else {
-            SPINDLE_PWM_TIMER->CCER &= ~TIM_CCER_CC1P;
-            SPINDLE_PWM_TIMER->CR2 &= ~TIM_CR2_OIS1;
-        }
+        SPINDLE_PWM_TIMER->CCER &= ~SPINDLE_PWM_CCER_EN;
+        SPINDLE_PWM_TIMER_CCMR &= ~SPINDLE_PWM_CCMR_OCM_CLR;
+        SPINDLE_PWM_TIMER_CCMR |= SPINDLE_PWM_CCMR_OCM_SET;
+        SPINDLE_PWM_TIMER_CCR = 0;
+#if SPINDLE_PWM_TIMER_N == 1
         SPINDLE_PWM_TIMER->BDTR |= TIM_BDTR_OSSR|TIM_BDTR_OSSI;
-        SPINDLE_PWM_TIMER->CCER |= TIM_CCER_CC1E;
+#endif
+        if(settings.spindle.invert.pwm) {
+            SPINDLE_PWM_TIMER->CCER |= SPINDLE_PWM_CCER_POL;
+            SPINDLE_PWM_TIMER->CR2 |= SPINDLE_PWM_CR2_OIS;
+        } else {
+            SPINDLE_PWM_TIMER->CCER &= ~SPINDLE_PWM_CCER_POL;
+            SPINDLE_PWM_TIMER->CR2 &= ~SPINDLE_PWM_CR2_OIS;
+        }
+        SPINDLE_PWM_TIMER->CCER |= ~SPINDLE_PWM_CCER_EN;
         SPINDLE_PWM_TIMER->CR1 |= TIM_CR1_CEN;
 
     } else {
@@ -929,7 +940,6 @@ static bool driver_setup (settings_t *settings)
 {
   //    Interrupt_disableSleepOnIsrExit();
 
-    __HAL_RCC_TIM1_CLK_ENABLE();
     __HAL_RCC_TIM2_CLK_ENABLE();
     __HAL_RCC_TIM3_CLK_ENABLE();
     __HAL_RCC_TIM4_CLK_ENABLE();
@@ -991,6 +1001,12 @@ static bool driver_setup (settings_t *settings)
 
  // Spindle init
 
+    SPINDLE_PWM_CLOCK_ENA();
+
+#if SPINDLE_PWM_AF_REMAP
+    AFIO->MAPR |= (SPINDLE_PWM_AF_REMAP << (4 + 2 * SPINDLE_PWM_TIMER_N));
+#endif
+
     GPIO_Init.Pin = 1 << SPINDLE_PWM_PIN;
     GPIO_Init.Mode = GPIO_MODE_AF_PP;
     HAL_GPIO_Init(SPINDLE_PWM_PORT, &GPIO_Init);
@@ -1047,7 +1063,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "220922";
+    hal.driver_version = "221002";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif

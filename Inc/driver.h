@@ -43,6 +43,31 @@
 
 #define BITBAND_PERI(x, b) (*((__IO uint8_t *) (PERIPH_BB_BASE + (((uint32_t)(volatile const uint32_t *)&(x)) - PERIPH_BASE)*32 + (b)*4)))
 
+#define timer(t) timerN(t)
+#define timerN(t) TIM ## t
+#define timerINT(t) timerint(t)
+#define timerint(t) TIM ## t ## _IRQn
+#define timerHANDLER(t) timerhandler(t)
+#define timerhandler(t) TIM ## t ## _IRQHandler
+#define timerCCEN(c, n) timerccen(c, n)
+#define timerccen(c, n) TIM_CCER_CC ## c ## n ## E
+#define timerCCMR(p, c) timerccmr(p, c)
+#define timerccmr(p, c) TIM ## p->CCMR ## c
+#define timerOCM(p, c) timerocm(p, c)
+#define timerocm(p, c) TIM_CCMR ## p ##_OC ## c ## M_1|TIM_CCMR ## p ##_OC ## c ## M_2
+#define timerOCMC(p, c) timerocmc(p, c)
+#define timerocmc(p, c) (TIM_CCMR ## p ##_OC ## c ## M|TIM_CCMR ## p ##_CC ## c ## S)
+#define timerCCR(t, c) timerccr(t, c)
+#define timerccr(t, c) TIM ## t->CCR ## c
+#define timerCCP(c, n) timerccp(c, n)
+#define timerccp(c, n) TIM_CCER_CC ## c ## n ## P
+#define timerCR2OIS(c, n) timercr2ois(c, n)
+#define timercr2ois(c, n) TIM_CR2_OIS ## c ## n
+#define timerAF(t, f) timeraf(t, f)
+#define timeraf(t, f) GPIO_AF ## f ## _TIM ## t
+#define timerCLKENA(t) timercken(t)
+#define timercken(t) __HAL_RCC_TIM ## t ## _CLK_ENABLE
+
 // Define GPIO output mode options
 
 #define GPIO_SHIFT0   0
@@ -62,12 +87,6 @@
 #define GPIO_MAP     14
 #define GPIO_BITBAND 15
 
-// Define timer allocations.
-#define SPINDLE_PWM_TIMER TIM1
-#define STEPPER_TIMER TIM2
-#define PULSE_TIMER TIM3
-#define DEBOUNCE_TIMER TIM4
-
 #ifdef BOARD_CNC_BOOSTERPACK
   #include "cnc_boosterpack_map.h"
 #elif defined(BOARD_CNC3040)
@@ -79,6 +98,58 @@
 #else // default board
   #include "generic_map.h"
 #endif
+
+// Define timer allocations.
+#define STEPPER_TIMER TIM2
+#define PULSE_TIMER TIM3
+#define DEBOUNCE_TIMER TIM4
+
+#ifdef SPINDLE_PWM_PORT_BASE
+
+#if SPINDLE_PWM_PORT_BASE == GPIOA_BASE
+  #if SPINDLE_PWM_PIN == 8 // PA8 - TIM1_CH1
+    #define SPINDLE_PWM_TIMER_N     1
+    #define SPINDLE_PWM_TIMER_CH    1
+    #define SPINDLE_PWM_TIMER_INV   0
+    #define SPINDLE_PWM_AF_REMAP    0
+  #endif
+#elif SPINDLE_PWM_PORT_BASE == GPIOB_BASE
+  #if SPINDLE_PWM_PIN == 0 // PB0 - TIM1_CH2N
+    #define SPINDLE_PWM_TIMER_N     1
+    #define SPINDLE_PWM_TIMER_CH    2
+    #define SPINDLE_PWM_TIMER_INV   1
+    #define SPINDLE_PWM_AF_REMAP    0b01
+  #endif
+#endif
+
+#if SPINDLE_PWM_AF_REMAP && SPINDLE_PWM_TIMER_N > 3
+#error 'Timer 4+ pins cannot be remapped!'
+#endif
+
+#if SPINDLE_PWM_TIMER_CH == 1 || SPINDLE_PWM_TIMER_CH == 2
+#define SPINDLE_PWM_CCR 1
+#else
+#define SPINDLE_PWM_CCR 2
+#endif
+#define SPINDLE_PWM_TIMER           timer(SPINDLE_PWM_TIMER_N)
+#define SPINDLE_PWM_TIMER_CCR       timerCCR(SPINDLE_PWM_TIMER_N, SPINDLE_PWM_TIMER_CH)
+#define SPINDLE_PWM_TIMER_CCMR      timerCCMR(SPINDLE_PWM_TIMER_N, SPINDLE_PWM_CCR)
+#define SPINDLE_PWM_CCMR_OCM_SET    timerOCM(SPINDLE_PWM_CCR, SPINDLE_PWM_TIMER_CH)
+#define SPINDLE_PWM_CCMR_OCM_CLR    timerOCMC(SPINDLE_PWM_CCR, SPINDLE_PWM_TIMER_CH)
+#if SPINDLE_PWM_TIMER_INV
+#define SPINDLE_PWM_CCER_EN         timerCCEN(SPINDLE_PWM_TIMER_CH, N)
+#define SPINDLE_PWM_CCER_POL        timerCCP(SPINDLE_PWM_TIMER_CH, N)
+#define SPINDLE_PWM_CR2_OIS         timerCR2OIS(SPINDLE_PWM_TIMER_CH, N)
+#else
+#define SPINDLE_PWM_CCER_EN         timerCCEN(SPINDLE_PWM_TIMER_CH, )
+#define SPINDLE_PWM_CCER_POL        timerCCP(SPINDLE_PWM_TIMER_CH, )
+#define SPINDLE_PWM_CR2_OIS         timerCR2OIS(SPINDLE_PWM_TIMER_CH, )
+#endif
+
+#define SPINDLE_PWM_PORT            ((GPIO_TypeDef *)SPINDLE_PWM_PORT_BASE)
+#define SPINDLE_PWM_CLOCK_ENA       timerCLKENA(SPINDLE_PWM_TIMER_N)
+
+#endif // SPINDLE_PWM_PORT_BASE
 
 // Adjust STEP_PULSE_LATENCY to get accurate step pulse length when required, e.g if using high step rates.
 // The default value is calibrated for 10 microseconds length.

@@ -3,6 +3,9 @@ Thumbs.db
 ehthumbs.db
 ehthumbs_vista.db
 
+# STM32 framework files
+*.ioc
+
 # Folder config file
 Desktop.ini
 

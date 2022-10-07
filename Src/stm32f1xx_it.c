@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "driver.h"
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -201,6 +202,9 @@ void SysTick_Handler(void)
 /**
   * @brief This function handles USB low priority or CAN RX0 interrupts.
   */
+
+#if USB_SERIAL_CDC
+
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
   /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 0 */
@@ -211,6 +215,8 @@ void USB_LP_CAN1_RX0_IRQHandler(void)
 
   /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
 }
+
+#endif
 
 /* USER CODE BEGIN 1 */
 
