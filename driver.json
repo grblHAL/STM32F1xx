@@ -1,0 +1,77 @@
+{
+  "caps":
+  {
+    "axes": 6,
+    "usb_cdc": 1,
+    "uart": 1,
+    "serial_ports": 2,
+    "eeprom": 1,
+    "ganged_axes": 1,
+    "auto_square": 1,
+    "digital_in": 0,
+    "digital_out": 0,
+    "safety_door": 1,
+    "estop": 1,
+    "mpg_mode": 1,
+    "sdcard": 1,
+    "pio_board": "bluepill_f103c8_128k",
+    "ldscript": "STM32F103C8TX_FLASH.ld",
+    "plugins": [
+      { "id": "eeprom" },
+      { "id": "keypad" },
+      { "id": "motors" },
+      { "id": "odometer" },
+      { "id": "sdcard" }
+    ]
+  },
+  "symbols": {
+    "USE_HAL_DRIVER": "",
+    "NVS_SIZE": 1536
+  },
+  "boards": [
+    {
+      "name": "CNC 3040 (Red/Bluepill 128K)",
+      "symbol": "BOARD_CNC3040",
+      "URL": "https://github.com/shaise/GrblCNC",
+      "caps": {
+        "axes": 5,
+        "auto_square": 0,
+        "digital_in": 4,
+        "digital_out": 6,
+        "eeprom": 1,
+        "fram": 1,
+        "i2c": 1,
+        "trinamic": 0
+      },
+      "symbols": {
+          "STM32F103xB": "",
+          "RX_BUFFER_SIZE": 512,
+          "NO_SETTINGS_DESCRIPTIONS": ""
+      }
+    },
+    {
+      "name": "BTT SKR MINI E3 V2.0 4-axis (Bootloader)",
+      "symbol": "BTT_SKR_MINI_E3_V20",
+      "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
+      "caps": {
+        "axes": 4,
+        "digital_in": 0,
+        "digital_out": 0,
+        "eeprom": 0,
+        "fram": 0,
+        "i2c": 0,
+        "sdcard": 1,
+        "keypad": 0,
+        "trinamic": 2209,
+        "trinamic_uart_addr": 1,
+        "pio_board": "genericSTM32F103RC",
+        "ldscript": "STM32F103RCTX_BL28K_FLASH.ld"
+      },
+      "symbols": {
+          "STM32F103xE": "",
+          "HAS_BOOTLOADER": "",
+          "TRINAMIC_ENABLE": 2209
+      }
+    }
+  ]
+}
