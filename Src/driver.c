@@ -610,16 +610,21 @@ static void coolantSetState (coolant_state_t mode)
 {
     mode.value ^= settings.coolant_invert.mask;
     BITBAND_PERI(COOLANT_FLOOD_PORT->ODR, COOLANT_FLOOD_PIN) = mode.flood;
+#ifdef COOLANT_MIST_PIN
     BITBAND_PERI(COOLANT_MIST_PORT->ODR, COOLANT_MIST_PIN) = mode.mist;
+#endif
 }
 
 // Returns coolant state in a coolant_state_t variable
 static coolant_state_t coolantGetState (void)
 {
-    coolant_state_t state = {0};
+    coolant_state_t state;
 
+    state.mask = settings.coolant_invert.mask;
     state.flood = (COOLANT_FLOOD_PORT->IDR & COOLANT_FLOOD_BIT) != 0;
+#ifdef COOLANT_MIST_PIN
     state.mist  = (COOLANT_MIST_PORT->IDR & COOLANT_MIST_BIT) != 0;
+#endif
     state.value ^= settings.coolant_invert.mask;
 
     return state;
@@ -1011,13 +1016,15 @@ static bool driver_setup (settings_t *settings)
     GPIO_Init.Mode = GPIO_MODE_AF_PP;
     HAL_GPIO_Init(SPINDLE_PWM_PORT, &GPIO_Init);
 
- // Coolant init
+ // Coolant init (??)
 
     BITBAND_PERI(COOLANT_FLOOD_PORT->ODR, COOLANT_FLOOD_PIN) = 1;
-    BITBAND_PERI(COOLANT_MIST_PORT->ODR, COOLANT_MIST_PIN) = 1;
-
     BITBAND_PERI(COOLANT_FLOOD_PORT->ODR, COOLANT_FLOOD_PIN) = 0;
+
+#ifdef COOLANT_MIST_PIN
+    BITBAND_PERI(COOLANT_MIST_PORT->ODR, COOLANT_MIST_PIN) = 1;
     BITBAND_PERI(COOLANT_MIST_PORT->ODR, COOLANT_MIST_PIN) = 0;
+#endif
 
 #if SDCARD_ENABLE
 
@@ -1063,7 +1070,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "221002";
+    hal.driver_version = "221022";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
@@ -1107,7 +1114,11 @@ bool driver_init (void)
         .get_state = spindleGetState
     };
 
+#ifdef SPINDLE_PWM_PIN
     spindle_register(&spindle, "PWM");
+#else
+    spindle_register(&spindle, "Basic");
+#endif
 
     hal.control.get_state = systemGetState;
 
@@ -1159,15 +1170,7 @@ bool driver_init (void)
     trinamic_init();
 #endif
 
-#if KEYPAD_ENABLE
-    keypad_init();
-#endif
-
-    my_plugin_init();
-
-#if ODOMETER_ENABLE
-    odometer_init(); // NOTE: this *must* be last plugin to be initialized as it claims storage at the end of NVS.
-#endif
+#include "grbl/plugins_init.h"
 
     // No need to move version check before init.
     // Compiler will fail any signature mismatch for existing entries.
