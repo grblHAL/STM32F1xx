@@ -10,6 +10,7 @@
     "auto_square": 1,
     "digital_in": 0,
     "digital_out": 0,
+    "probe": 1,
     "safety_door": 1,
     "estop": 1,
     "mpg_mode": 1,
@@ -41,6 +42,7 @@
         "eeprom": 1,
         "fram": 1,
         "i2c": 1,
+        "sdcard": 0,
         "trinamic": 0
       },
       "symbols": {
@@ -57,7 +59,7 @@
         "axes": 4,
         "digital_in": 0,
         "digital_out": 0,
-        "eeprom": 0,
+        "eeprom": 3,
         "fram": 0,
         "i2c": 0,
         "sdcard": 1,
@@ -69,8 +71,7 @@
       },
       "symbols": {
           "STM32F103xE": "",
-          "HAS_BOOTLOADER": "",
-          "TRINAMIC_ENABLE": 2209
+          "HAS_BOOTLOADER": ""
       }
     }
   ]

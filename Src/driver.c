@@ -1070,7 +1070,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "221022";
+    hal.driver_version = "221027";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
@@ -1164,10 +1164,6 @@ bool driver_init (void)
 
 #ifdef HAS_BOARD_INIT
     board_init();
-#endif
-
-#if TRINAMIC_ENABLE
-    trinamic_init();
 #endif
 
 #include "grbl/plugins_init.h"
