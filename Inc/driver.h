@@ -100,15 +100,15 @@
 #endif
 
 // Define timer allocations.
-#define STEPPER_TIMER TIM5
+#define STEPPER_TIMER TIM2
 #define PULSE_TIMER TIM3
 #define DEBOUNCE_TIMER TIM4
 
 #ifdef SPINDLE_PWM_PORT_BASE
 
 #if SPINDLE_PWM_PORT_BASE == GPIOA_BASE
-    #if SPINDLE_PWM_PIN == 1 // PA1 - TIM2_CH2
-    #define SPINDLE_PWM_TIMER_N     2
+    #if SPINDLE_PWM_PIN == 1 // PA1 - TIM5_CH2
+    #define SPINDLE_PWM_TIMER_N     5
     #define SPINDLE_PWM_TIMER_CH    2
     #define SPINDLE_PWM_TIMER_INV   1
     #define SPINDLE_PWM_AF_REMAP    0
