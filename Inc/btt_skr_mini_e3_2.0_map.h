@@ -16,7 +16,7 @@
   You should have received a copy of the GNU General Public License
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+//#define SDCARD_ENABLE  1
 #if N_ABC_MOTORS > 1 || N_GANGED
 #error "Axis configuration is not supported!"
 #endif
@@ -89,24 +89,24 @@
 
   // Define spindle enable and spindle direction output pins.
 #define SPINDLE_ENABLE_PORT     GPIOC
-#define SPINDLE_ENABLE_PIN      7 //PC7
+#define SPINDLE_ENABLE_PIN      7 //PC7-FAN1
 #define SPINDLE_DIRECTION_PORT  GPIOC
-#define SPINDLE_DIRECTION_PIN   6 //PC6
+#define SPINDLE_DIRECTION_PIN   8 //PC8
 
 // Define spindle PWM output pin.
 #define SPINDLE_PWM_PORT_BASE   GPIOA_BASE
-#define SPINDLE_PWM_PIN         8 //PA8
+#define SPINDLE_PWM_PIN         1 //PA1 or PA8
 
 // Define flood and mist coolant enable output pins.
 #define COOLANT_FLOOD_PORT      GPIOC
-#define COOLANT_FLOOD_PIN       8 //PC8
+#define COOLANT_FLOOD_PIN       6 //PC6-FAN0
 #define COOLANT_MIST_PORT       GPIOC
 #define COOLANT_MIST_PIN        9 //PC9
 
 // Define user-control controls (cycle start, reset, feed hold) input pins.
 #define CONTROL_PORT            GPIOC
-#define RESET_PIN               15 //PC15
-#define FEED_HOLD_PIN           13 //PC13
+#define RESET_PIN               13 //PC13
+#define FEED_HOLD_PIN           15 //PC15
 #define CYCLE_START_PIN         12 //PC12
 #if SAFETY_DOOR_ENABLE
 #define SAFETY_DOOR_PIN         3 //PC3
