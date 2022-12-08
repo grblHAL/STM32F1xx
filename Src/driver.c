@@ -589,7 +589,7 @@ bool spindleConfig (void)
             SPINDLE_PWM_TIMER->CCER &= ~SPINDLE_PWM_CCER_POL;
             SPINDLE_PWM_TIMER->CR2 &= ~SPINDLE_PWM_CR2_OIS;
         }
-        SPINDLE_PWM_TIMER->CCER |= ~SPINDLE_PWM_CCER_EN;
+        SPINDLE_PWM_TIMER->CCER |= SPINDLE_PWM_CCER_EN;
         SPINDLE_PWM_TIMER->CR1 |= TIM_CR1_CEN;
 
     } else {
