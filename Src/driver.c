@@ -305,6 +305,7 @@ inline static __attribute__((always_inline)) void stepperSetStepOutputs (axes_si
 inline static __attribute__((always_inline)) void stepperSetDirOutputs (axes_signals_t dir_outbits)
 {
 #if DIRECTION_OUTMODE == GPIO_BITBAND
+    dir_outbits.mask ^= settings.steppers.dir_invert.mask;
     BITBAND_PERI(X_DIRECTION_PORT->ODR, X_DIRECTION_PIN) = dir_outbits.x;
     BITBAND_PERI(Y_DIRECTION_PORT->ODR, Y_DIRECTION_PIN) = dir_outbits.y;
     BITBAND_PERI(Z_DIRECTION_PORT->ODR, Z_DIRECTION_PIN) = dir_outbits.z;
@@ -1070,7 +1071,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "221027";
+    hal.driver_version = "221206";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
