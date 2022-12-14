@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2019-2021 Terje Io
+  Copyright (c) 2019-2022 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -95,6 +95,8 @@
   #include "my_machine_map.h"
 #elif defined(BTT_SKR_MINI_E3_V20)
   #include "btt_skr_mini_e3_2.0_map.h"
+#elif defined(BTT_SKR_MINI_E3_V20_ALT2)
+  #include "btt_skr_mini_e3_2.0_alt2_map.h"
 #else // default board
   #include "generic_map.h"
 #endif
@@ -107,17 +109,21 @@
 #ifdef SPINDLE_PWM_PORT_BASE
 
 #if SPINDLE_PWM_PORT_BASE == GPIOA_BASE
-    #if SPINDLE_PWM_PIN == 1 // PA1 - TIM5_CH2
+  #if SPINDLE_PWM_PIN == 1 // PA1 - TIM5_CH2
     #define SPINDLE_PWM_TIMER_N     5
     #define SPINDLE_PWM_TIMER_CH    2
     #define SPINDLE_PWM_TIMER_INV   1
     #define SPINDLE_PWM_AF_REMAP    0
-  #endif  
-#if SPINDLE_PWM_PIN == 8 // PA8 - TIM1_CH1
+  #elif SPINDLE_PWM_PIN == 8 // PA8 - TIM1_CH1
     #define SPINDLE_PWM_TIMER_N     1
     #define SPINDLE_PWM_TIMER_CH    1
     #define SPINDLE_PWM_TIMER_INV   0
     #define SPINDLE_PWM_AF_REMAP    0
+  #elif SPINDLE_PWM_PIN == 1 // PA1 - TIM2_CH2
+    #define SPINDLE_PWM_TIMER_N 2
+    #define SPINDLE_PWM_TIMER_CH 2
+    #define SPINDLE_PWM_TIMER_INV 0
+    #define SPINDLE_PWM_AF_REMAP 0
   #endif
 #elif SPINDLE_PWM_PORT_BASE == GPIOB_BASE
   #if SPINDLE_PWM_PIN == 0 // PB0 - TIM1_CH2N
@@ -196,7 +202,7 @@
 #error SD card plugin not supported!
 #endif
 
-#if TRINAMIC_ENABLE && !(defined(BOARD_CNC_BOOSTERPACK) || defined(BTT_SKR_MINI_E3_V20) || defined(TRINAMIC_DEBUG))
+#if TRINAMIC_ENABLE && !(defined(BOARD_CNC_BOOSTERPACK) || defined(BTT_SKR_MINI_E3_V20) || defined(BTT_SKR_MINI_E3_V20_ALT2) || defined(TRINAMIC_DEBUG))
 #error Trinamic plugin not supported!
 #endif
 

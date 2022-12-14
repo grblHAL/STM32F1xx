@@ -3,7 +3,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2020-2021 Terje Io
+  Copyright (c) 2020-2022 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,12 +24,15 @@
 //#define BOARD_CNC3040
 //#define BOARD_CNC_BOOSTERPACK
 //#define BTT_SKR_MINI_E3_V20
+//#define BTT_SKR_MINI_E3_V20_ALT2
 //#define BOARD_MY_MACHINE // Add my_machine_map.h before enabling this!
 
 // Configuration
 // Uncomment to enable.
 
+#ifndef USB_SERIAL_CDC
 #define USB_SERIAL_CDC       1 // Serial communication via native USB. Comment out for UART communication.
+#endif
 //#define SAFETY_DOOR_ENABLE 1 // Enable safety door input.
 //#define SDCARD_ENABLE      1 // Run gcode programs from SD card, requires sdcard plugin.
 //#define KEYPAD_ENABLE      1 // Set to 1 for I2C keypad, 2 for other input such as serial data
