@@ -73,6 +73,29 @@
           "STM32F103xE": "",
           "HAS_BOOTLOADER": ""
       }
-    }
+    },
+    {
+      "name": "BTT SKR MINI E3 V2.0 4-axis Alt2 (Bootloader)",
+      "symbol": "BTT_SKR_MINI_E3_V20_ALT2",
+      "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
+      "caps": {
+        "axes": 4,
+        "digital_in": 0,
+        "digital_out": 0,
+        "eeprom": 3,
+        "fram": 0,
+        "i2c": 0,
+        "sdcard": 1,
+        "keypad": 0,
+        "trinamic": 2209,
+        "trinamic_uart_addr": 1,
+        "pio_board": "genericSTM32F103RC",
+        "ldscript": "STM32F103RCTX_BL28K_FLASH.ld"
+      },
+      "symbols": {
+          "STM32F103xE": "",
+          "HAS_BOOTLOADER": ""
+      }
+    }    
   ]
 }
