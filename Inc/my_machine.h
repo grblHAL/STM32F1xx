@@ -3,7 +3,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2020-2022 Terje Io
+  Copyright (c) 2020-2023 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -23,8 +23,9 @@
 // If none is enabled pin mappings from generic_map.h will be used.
 //#define BOARD_CNC3040
 //#define BOARD_CNC_BOOSTERPACK
-//#define BTT_SKR_MINI_E3_V20
-//#define BTT_SKR_MINI_E3_V20_ALT2
+//#define BOARD_MACH3_BOB
+//#define BOARD_BTT_SKR_MINI_E3_V20
+//#define BOARD_BTT_SKR_MINI_E3_V20_ALT2
 //#define BOARD_MY_MACHINE // Add my_machine_map.h before enabling this!
 
 // Configuration

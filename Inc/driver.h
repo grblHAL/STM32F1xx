@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2019-2022 Terje Io
+  Copyright (c) 2019-2023 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -91,12 +91,14 @@
   #include "cnc_boosterpack_map.h"
 #elif defined(BOARD_CNC3040)
   #include "cnc3040_map.h"
+#elif defined(BOARD_BTT_SKR_MINI_E3_V20)
+  #include "btt_skr_mini_e3_2.0_map.h"
+#elif defined(BOARD_BTT_SKR_MINI_E3_V20_ALT2)
+  #include "btt_skr_mini_e3_2.0_alt2_map.h"
+#elif defined(BOARD_MACH3_BOB)
+  #include "mach3_bob_map.h"
 #elif defined(BOARD_MY_MACHINE)
   #include "my_machine_map.h"
-#elif defined(BTT_SKR_MINI_E3_V20)
-  #include "btt_skr_mini_e3_2.0_map.h"
-#elif defined(BTT_SKR_MINI_E3_V20_ALT2)
-  #include "btt_skr_mini_e3_2.0_alt2_map.h"
 #else // default board
   #include "generic_map.h"
 #endif
@@ -202,7 +204,7 @@
 #error SD card plugin not supported!
 #endif
 
-#if TRINAMIC_ENABLE && !(defined(BOARD_CNC_BOOSTERPACK) || defined(BTT_SKR_MINI_E3_V20) || defined(BTT_SKR_MINI_E3_V20_ALT2) || defined(TRINAMIC_DEBUG))
+#if TRINAMIC_ENABLE && !(defined(BOARD_CNC_BOOSTERPACK) || defined(BOARD_BTT_SKR_MINI_E3_V20) || defined(BOARD_BTT_SKR_MINI_E3_V20_ALT2) || defined(TRINAMIC_DEBUG))
 #error Trinamic plugin not supported!
 #endif
 

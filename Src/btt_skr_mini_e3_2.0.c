@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2021 Terje Io
+  Copyright (c) 2021-2023 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 
 #include "driver.h"
 
-#if TRINAMIC_ENABLE == 2209
+#if defined(BOARD_BTT_SKR_MINI_E3_V20) || defined(BOARD_BTT_SKR_MINI_E3_V20_ALT2)
 
 #include <string.h>
 
@@ -75,7 +75,8 @@ void tmc_uart_write (trinamic_motor_t driver, TMC_uart_write_datagram_t *dgr)
     while(tmc_uart.get_tx_buffer_count());	// Wait while the datagram is delivered
 }
 
-static void btt_skr_mini_e3_enable_usb(void) {
+void board_init (void)
+{
 #if USB_SERIAL_CDC
     /* PA14 must be set low to enable USB D+ */
     GPIO_InitTypeDef GPIO_Init = {
@@ -86,17 +87,13 @@ static void btt_skr_mini_e3_enable_usb(void) {
     HAL_GPIO_Init(GPIOA, &GPIO_Init);
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_14, GPIO_PIN_RESET);
 #endif
-}
 
-void board_init (void)
-{
 #ifdef SERIAL2_MOD
     memcpy(&tmc_uart, serial2Init(), sizeof(io_stream_t));
 #else
     memcpy(&tmc_uart, serialInit(), sizeof(io_stream_t));
 #endif
     tmc_uart.set_enqueue_rt_handler(stream_buffer_all);
-    btt_skr_mini_e3_enable_usb();
 }
 
 #endif
