@@ -1038,7 +1038,7 @@ static bool driver_setup (settings_t *settings)
     on_unknown_sys_command = grbl.on_unknown_sys_command;
     grbl.on_unknown_sys_command = jtag_enable;
 
-    IOInitDone = settings->version == 21;
+    IOInitDone = settings->version == 22;
 
     hal.settings_changed(settings);
 
@@ -1071,7 +1071,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103C8";
-    hal.driver_version = "230118";
+    hal.driver_version = "230125";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
