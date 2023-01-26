@@ -20,6 +20,7 @@
     "plugins": [
       { "id": "eeprom" },
       { "id": "keypad" },
+      { "id": "macros" },
       { "id": "motors" },
       { "id": "odometer" },
       { "id": "sdcard" }
