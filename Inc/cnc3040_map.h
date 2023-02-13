@@ -107,9 +107,8 @@
 #define PROBE_PORT              GPIOB
 #define PROBE_PIN               13
 
-#if I2C_STROBE_ENABLE
-#define I2C_STROBE_PORT         GPIOB
-#define I2C_STROBE_PIN          15
+#if KEYPAD_ENABLE == 1
+#error I2C keypad mode is not supported!
 #endif
 
 #if SDCARD_ENABLE
