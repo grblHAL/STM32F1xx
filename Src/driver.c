@@ -109,10 +109,10 @@ static input_signal_t inputpin[] = {
     { .id = Input_Probe,          .port = PROBE_PORT,       .pin = PROBE_PIN,           .group = PinGroup_Probe },
 #endif
 #ifdef I2C_STROBE_PIN
-    { .id = Input_KeypadStrobe,   .port = I2C_STROBE_PORT,  .pin = I2C_STROBE_PIN,      .group = PinGroup_Keypad },
+    { .id = Input_I2CStrobe,      .port = I2C_STROBE_PORT,  .pin = I2C_STROBE_PIN,      .group = PinGroup_Keypad },
 #endif
 #ifdef MPG_MODE_PIN
-    { .id = Input_MPGSelect,     .port = MPG_MODE_PORT,    .pin = MPG_MODE_PIN,        .group = PinGroup_MPG },
+    { .id = Input_MPGSelect,      .port = MPG_MODE_PORT,    .pin = MPG_MODE_PIN,        .group = PinGroup_MPG },
 #endif
 // Limit input pins must be consecutive in this array
     { .id = Input_LimitX,         .port = X_LIMIT_PORT,     .pin = X_LIMIT_PIN,         .group = PinGroup_Limit },
@@ -123,6 +123,9 @@ static input_signal_t inputpin[] = {
 #endif
 #ifdef B_LIMIT_PIN
     { .id = Input_LimitB,         .port = B_LIMIT_PORT,     .pin = B_LIMIT_PIN,         .group = PinGroup_Limit },
+#endif
+#ifdef C_LIMIT_PIN
+    { .id = Input_LimitC,         .port = C_LIMIT_PORT,     .pin = C_LIMIT_PIN,         .group = PinGroup_Limit },
 #endif
 // Aux input pins must be consecutive in this array
 #ifdef AUXINPUT0_PIN
@@ -149,6 +152,9 @@ static output_signal_t outputpin[] = {
 #ifdef B_AXIS
     { .id = Output_StepB,           .port = B_STEP_PORT,            .pin = B_STEP_PIN,              .group = PinGroup_StepperStep, },
 #endif
+#ifdef C_AXIS
+    { .id = Output_StepC,           .port = C_STEP_PORT,            .pin = C_STEP_PIN,              .group = PinGroup_StepperStep, },
+#endif
     { .id = Output_DirX,            .port = X_DIRECTION_PORT,       .pin = X_DIRECTION_PIN,         .group = PinGroup_StepperDir, },
     { .id = Output_DirY,            .port = Y_DIRECTION_PORT,       .pin = Y_DIRECTION_PIN,         .group = PinGroup_StepperDir, },
     { .id = Output_DirZ,            .port = Z_DIRECTION_PORT,       .pin = Z_DIRECTION_PIN,         .group = PinGroup_StepperDir, },
@@ -157,6 +163,9 @@ static output_signal_t outputpin[] = {
 #endif
 #ifdef B_AXIS
     { .id = Output_DirB,            .port = B_DIRECTION_PORT,       .pin = B_DIRECTION_PIN,         .group = PinGroup_StepperDir, },
+#endif
+#ifdef C_AXIS
+    { .id = Output_DirC,            .port = C_DIRECTION_PORT,       .pin = C_DIRECTION_PIN,         .group = PinGroup_StepperDir, },
 #endif
 #if !TRINAMIC_MOTOR_ENABLE
 #ifdef STEPPERS_ENABLE_PORT
@@ -177,7 +186,10 @@ static output_signal_t outputpin[] = {
 #ifdef B_ENABLE_PORT
     { .id = Output_StepperEnableB,  .port = B_ENABLE_PORT,          .pin = B_ENABLE_PIN,            .group = PinGroup_StepperEnable, },
 #endif
-#endif // TRINAMIC_ENABLE
+#ifdef C_ENABLE_PORT
+    { .id = Output_StepperEnableC,  .port = C_ENABLE_PORT,          .pin = C_ENABLE_PIN,            .group = PinGroup_StepperEnable, },
+#endif
+#endif // !TRINAMIC_MOTOR_ENABLE
 #ifdef SPINDLE_ENABLE_PIN
     { .id = Output_SpindleOn,       .port = SPINDLE_ENABLE_PORT,    .pin = SPINDLE_ENABLE_PIN,      .group = PinGroup_SpindleControl },
 #endif
@@ -274,6 +286,9 @@ static void stepperEnable (axes_signals_t enable)
   #ifdef B_ENABLE_PIN
     BITBAND_PERI(B_ENABLE_PORT->ODR, B_ENABLE_PIN) = enable.b;
   #endif
+  #ifdef C_ENABLE_PIN
+        BITBAND_PERI(C_ENABLE_PORT->ODR, C_ENABLE_PIN) = enable.c;
+  #endif
  #endif
 #endif
 }
@@ -296,7 +311,6 @@ static void stepperGoIdle (bool clear_signals)
     STEPPER_TIMER->CR1 &= ~TIM_CR1_CEN;
     STEPPER_TIMER->CNT = 0;
 }
-
 
 // Sets up stepper driver interrupt timeout, "Normal" version
 static void stepperCyclesPerTickPrescaled (uint32_t cycles_per_tick)
@@ -329,6 +343,9 @@ inline static __attribute__((always_inline)) void stepperSetStepOutputs (axes_si
   #ifdef B_AXIS
     BITBAND_PERI(B_STEP_PORT->ODR, B_STEP_PIN) = step_outbits.b;
   #endif
+  #ifdef C_AXIS
+    BITBAND_PERI(C_STEP_PORT->ODR, C_STEP_PIN) = step_outbits.c;
+  #endif
 #elif STEP_OUTMODE == GPIO_MAP
 	STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[step_outbits.value];
 #else
@@ -345,12 +362,15 @@ inline static __attribute__((always_inline)) void stepperSetDirOutputs (axes_sig
     BITBAND_PERI(X_DIRECTION_PORT->ODR, X_DIRECTION_PIN) = dir_outbits.x;
     BITBAND_PERI(Y_DIRECTION_PORT->ODR, Y_DIRECTION_PIN) = dir_outbits.y;
     BITBAND_PERI(Z_DIRECTION_PORT->ODR, Z_DIRECTION_PIN) = dir_outbits.z;
-#ifdef A_AXIS
+  #ifdef A_AXIS
     BITBAND_PERI(A_DIRECTION_PORT->ODR, A_DIRECTION_PIN) = dir_outbits.a;
-#endif
-#ifdef B_AXIS
+  #endif
+  #ifdef B_AXIS
     BITBAND_PERI(B_DIRECTION_PORT->ODR, B_DIRECTION_PIN) = dir_outbits.b;
-#endif
+  #endif
+  #ifdef C_AXIS
+    BITBAND_PERI(C_DIRECTION_PORT->ODR, C_DIRECTION_PIN) = dir_outbits.c;
+  #endif
 #elif DIRECTION_OUTMODE == GPIO_MAP
     DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | dir_outmap[dir_outbits.value];
 #else
@@ -413,14 +433,32 @@ inline static limit_signals_t limitsGetState()
     limit_signals_t signals = {0};
 
 #if LIMIT_INMODE == GPIO_BITBAND
-    signals.min.x = BITBAND_PERI(LIMIT_PORT->IDR, X_LIMIT_PIN);
-    signals.min.y = BITBAND_PERI(LIMIT_PORT->IDR, Y_LIMIT_PIN);
-    signals.min.z = BITBAND_PERI(LIMIT_PORT->IDR, Z_LIMIT_PIN);
+    signals.min.x = BITBAND_PERI(X_LIMIT_PORT->IDR, X_LIMIT_PIN);
+    signals.min.y = BITBAND_PERI(Y_LIMIT_PORT->IDR, Y_LIMIT_PIN);
+    signals.min.z = BITBAND_PERI(Z_LIMIT_PORT->IDR, Z_LIMIT_PIN);
+  #ifdef A_LIMIT_PIN
+    signals.min.a = BITBAND_PERI(A_LIMIT_PORT->IDR, A_LIMIT_PIN);
+  #endif
+  #ifdef B_LIMIT_PIN
+    signals.min.b = BITBAND_PERI(B_LIMIT_PORT->IDR, B_LIMIT_PIN);
+  #endif
+  #ifdef C_LIMIT_PIN
+    signals.min.c = BITBAND_PERI(C_LIMIT_PORT->IDR, C_LIMIT_PIN);
+  #endif
 #elif LIMIT_INMODE == GPIO_MAP
     uint32_t bits = LIMIT_PORT->IDR;
     signals.min.x = (bits & X_LIMIT_BIT) != 0;
     signals.min.y = (bits & Y_LIMIT_BIT) != 0;
     signals.min.z = (bits & Z_LIMIT_BIT) != 0;
+  #ifdef A_LIMIT_PIN
+    signals.min.a = (bits & A_LIMIT_BIT) != 0;
+  #endif
+  #ifdef B_LIMIT_PIN
+      signals.min.b = (bits & B_LIMIT_BIT) != 0;
+  #endif
+  #ifdef C_LIMIT_PIN
+      signals.min.c = (bits & C_LIMIT_BIT) != 0;
+  #endif
 #else
     signals.min.value = (uint8_t)((LIMIT_PORT->IDR & LIMIT_MASK) >> LIMIT_INMODE);
 #endif
@@ -869,7 +907,7 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
                     input->irq_mode = IRQ_Mode_Change;
                     break;
 
-                case Input_KeypadStrobe:
+                case Input_I2CStrobe:
                     pullup = true;
                     input->irq_mode = IRQ_Mode_Change;
                     break;
@@ -1242,7 +1280,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "230316";
+    hal.driver_version = "230317";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
