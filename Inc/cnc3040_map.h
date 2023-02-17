@@ -1,5 +1,5 @@
 /*
-  cnc3040_map.h - driver code for STM32F103C8 ARM processors
+  cnc3040_map.h - driver code for STM32F103xx ARM processors
 
   Part of grblHAL
 

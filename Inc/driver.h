@@ -1,6 +1,6 @@
 /*
 
-  driver.h - driver code for STM32F103C8 ARM processors
+  driver.h - driver code for STM32F103xx ARM processors
 
   Part of grblHAL
 
@@ -42,6 +42,8 @@
 #include "grbl/driver_opts.h"
 
 #define BITBAND_PERI(x, b) (*((__IO uint8_t *) (PERIPH_BB_BASE + (((uint32_t)(volatile const uint32_t *)&(x)) - PERIPH_BASE)*32 + (b)*4)))
+#define DIGITAL_IN(port, pin) BITBAND_PERI(port->IDR, pin)
+#define DIGITAL_OUT(port, pin, on) { BITBAND_PERI((port)->ODR, pin) = on; }
 
 #define timer(t) timerN(t)
 #define timerN(t) TIM ## t
@@ -204,8 +206,12 @@
 #error SD card plugin not supported!
 #endif
 
-#if TRINAMIC_ENABLE && !(defined(BOARD_CNC_BOOSTERPACK) || defined(BOARD_BTT_SKR_MINI_E3_V20) || defined(BOARD_BTT_SKR_MINI_E3_V20_ALT2) || defined(TRINAMIC_DEBUG))
+#if TRINAMIC_ENABLE && !(defined(BOARD_CNC_BOOSTERPACK) || defined(BOARD_BTT_SKR_MINI_E3_V20) || defined(BOARD_BTT_SKR_MINI_E3_V20_ALT2))
 #error Trinamic plugin not supported!
+#endif
+
+#if (!USB_SERIAL_CDC || MPG_ENABLE) && !defined(SERIAL_MOD)
+#define SERIAL_MOD 1
 #endif
 
 #ifndef RESET_PORT
@@ -257,5 +263,9 @@ void board_init (void);
 #endif
 
 bool driver_init (void);
+#ifdef HAS_IOPORTS
+void ioports_init (pin_group_pins_t *aux_inputs, pin_group_pins_t *aux_outputs);
+void ioports_event (uint32_t bit);
+#endif
 
 #endif // __DRIVER_H__

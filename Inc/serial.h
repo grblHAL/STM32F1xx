@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2017-2021 Terje Io
+  Copyright (c) 2017-2023 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -30,12 +30,16 @@
 #define RX_BUFFER_HWM 900
 #define RX_BUFFER_LWM 300
 
-#if !USB_SERIAL_CDC || defined(TRINAMIC_DEBUG)
-const io_stream_t *serialInit (void);
+#if defined(SERIAL_MOD) || defined(SERIAL2_MOD)
+void serialRegisterStreams (void);
+#endif
+
+#ifdef SERIAL_MOD
+const io_stream_t *serialInit (uint32_t baud_rate);
 #endif
 
 #ifdef SERIAL2_MOD
-const io_stream_t *serial2Init (void);
+const io_stream_t *serial2Init (uint32_t baud_rate);
 #endif
 
 /*EOF*/

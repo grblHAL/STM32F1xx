@@ -17,6 +17,10 @@
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef STM32F103xE
+#error "This board has a STM32F10RCT6 processor, select a corresponding build!"
+#endif
+
 #if N_ABC_MOTORS > 1 || N_GANGED
 #error "Axis configuration is not supported!"
 #endif

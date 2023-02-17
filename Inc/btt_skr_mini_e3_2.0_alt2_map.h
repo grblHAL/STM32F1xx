@@ -17,6 +17,10 @@
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef STM32F103xE
+#error "This board has a STM32F10RCT6 processor, select a corresponding build!"
+#endif
+
 #if N_ABC_MOTORS > 1 || N_GANGED
 #error "Axis configuration is not supported!"
 #endif
@@ -26,6 +30,7 @@
 #else
 #define BOARD_NAME "BTT SKR MINI E3 V2.0 (alt2)"
 #endif
+#define BOARD_URL "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3"
 
 #define I2C_PORT 1
 #define SERIAL2_MOD

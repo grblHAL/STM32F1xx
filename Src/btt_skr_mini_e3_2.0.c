@@ -1,6 +1,6 @@
 /*
 
-  btt_skr_mini_e3_2.0.c - driver code for STM32F103C8 ARM processors
+  btt_skr_mini_e3_2.0.c - driver code for STM32F103xx ARM processors
 
   Part of grblHAL
 
@@ -89,9 +89,9 @@ void board_init (void)
 #endif
 
 #ifdef SERIAL2_MOD
-    memcpy(&tmc_uart, serial2Init(), sizeof(io_stream_t));
+    memcpy(&tmc_uart, serial2Init(115200), sizeof(io_stream_t));
 #else
-    memcpy(&tmc_uart, serialInit(), sizeof(io_stream_t));
+    memcpy(&tmc_uart, serialInit(115200), sizeof(io_stream_t));
 #endif
     tmc_uart.set_enqueue_rt_handler(stream_buffer_all);
 }

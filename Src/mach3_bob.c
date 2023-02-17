@@ -1,6 +1,6 @@
 /*
 
-  mach3_bob.c - driver code for STM32F103C8 ARM processors
+  mach3_bob.c - driver code for STM32F103xx ARM processors
 
   Part of grblHAL
 
@@ -27,18 +27,22 @@
 
 void board_init (void)
 {
-#if USB_SERIAL_CDC
-    /* PC11 must be set low to enable USB D+ */
     GPIO_InitTypeDef GPIO_Init = {
         .Mode = GPIO_MODE_OUTPUT_PP,
+#if USB_SERIAL_CDC
         .Pin = GPIO_PIN_11|GPIO_PIN_2,
+#else
+        .Pin = GPIO_PIN_2,
+#endif
         .Speed = GPIO_SPEED_FREQ_LOW,
     };
     HAL_GPIO_Init(GPIOC, &GPIO_Init);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_SET);
+
+#if USB_SERIAL_CDC
+    /* PC11 must be set low to enable USB D+ */
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_11, GPIO_PIN_RESET);
 #endif
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_SET); // Turn on LED
 }
 
 #endif
-

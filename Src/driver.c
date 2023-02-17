@@ -1,6 +1,6 @@
 /*
 
-  driver.c - driver code for STM32F103C8 ARM processors
+  driver.c - driver code for STM32F103xx ARM processors
 
   Part of grblHAL
 
@@ -23,6 +23,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "main.h"
@@ -30,6 +31,7 @@
 #include "driver.h"
 #include "serial.h"
 
+#include "grbl/protocol.h"
 #include "grbl/machine_limits.h"
 #include "grbl/motor_pins.h"
 #include "grbl/pin_bits_masks.h"
@@ -73,13 +75,15 @@
 #define SAFETY_DOOR_BIT 0
 #endif
 
-#if CONTROL_MASK != (RESET_BIT+FEED_HOLD_BIT+CYCLE_START_BIT+SAFETY_DOOR_BIT)
-#error Interrupt enabled input pins must have unique pin numbers!
+#ifdef MPG_MODE_PIN
+#define MPG_MODE_BIT (1<<MPG_MODE_PIN)
+#else
+#define MPG_MODE_BIT 0
 #endif
 
-#define DRIVER_IRQMASK (LIMIT_MASK|CONTROL_MASK|I2C_STROBE_BIT)
+#define DRIVER_IRQMASK (LIMIT_MASK|CONTROL_MASK|AUXINPUT_MASK|I2C_STROBE_BIT|MPG_MODE_BIT)
 
-#if DRIVER_IRQMASK != (LIMIT_MASK+CONTROL_MASK+I2C_STROBE_BIT)
+#if DRIVER_IRQMASK != (LIMIT_MASK_SUM+CONTROL_MASK_SUM+AUXINPUT_MASK_SUM+I2C_STROBE_BIT+MPG_MODE_BIT)
 #error Interrupt enabled input pins must have unique pin numbers!
 #endif
 
@@ -108,7 +112,7 @@ static input_signal_t inputpin[] = {
     { .id = Input_KeypadStrobe,   .port = I2C_STROBE_PORT,  .pin = I2C_STROBE_PIN,      .group = PinGroup_Keypad },
 #endif
 #ifdef MPG_MODE_PIN
-    { .id = Input_ModeSelect,     .port = MPG_MODE_PORT,    .pin = MPG_MODE_PIN,        .group = PinGroup_MPG },
+    { .id = Input_MPGSelect,     .port = MPG_MODE_PORT,    .pin = MPG_MODE_PIN,        .group = PinGroup_MPG },
 #endif
 // Limit input pins must be consecutive in this array
     { .id = Input_LimitX,         .port = X_LIMIT_PORT,     .pin = X_LIMIT_PIN,         .group = PinGroup_Limit },
@@ -118,7 +122,20 @@ static input_signal_t inputpin[] = {
     { .id = Input_LimitA,         .port = A_LIMIT_PORT,     .pin = A_LIMIT_PIN,         .group = PinGroup_Limit },
 #endif
 #ifdef B_LIMIT_PIN
-    { .id = Input_LimitB,         .port = B_LIMIT_PORT,     .pin = B_LIMIT_PIN,         .group = PinGroup_Limit }
+    { .id = Input_LimitB,         .port = B_LIMIT_PORT,     .pin = B_LIMIT_PIN,         .group = PinGroup_Limit },
+#endif
+// Aux input pins must be consecutive in this array
+#ifdef AUXINPUT0_PIN
+    { .id = Input_Aux0,           .port = AUXINPUT0_PORT,   .pin = AUXINPUT0_PIN,       .group = PinGroup_AuxInput },
+#endif
+#ifdef AUXINPUT1_PIN
+    { .id = Input_Aux1,           .port = AUXINPUT1_PORT,   .pin = AUXINPUT1_PIN,       .group = PinGroup_AuxInput },
+#endif
+#ifdef AUXINPUT2_PIN
+    { .id = Input_Aux2,           .port = AUXINPUT2_PORT,   .pin = AUXINPUT2_PIN,       .group = PinGroup_AuxInput },
+#endif
+#ifdef AUXINPUT3_PIN
+    { .id = Input_Aux3,           .port = AUXINPUT3_PORT,   .pin = AUXINPUT3_PIN,       .group = PinGroup_AuxInput },
 #endif
 };
 
@@ -174,10 +191,22 @@ static output_signal_t outputpin[] = {
 #ifdef SD_CS_PORT
     { .id = Output_SdCardCS,        .port = SD_CS_PORT,             .pin = SD_CS_PIN,               .group = PinGroup_SdCard },
 #endif
+#ifdef AUXOUTPUT0_PORT
+    { .id = Output_Aux0,            .port = AUXOUTPUT0_PORT,        .pin = AUXOUTPUT0_PIN,          .group = PinGroup_AuxOutput },
+#endif
+#ifdef AUXOUTPUT1_PORT
+    { .id = Output_Aux1,            .port = AUXOUTPUT1_PORT,        .pin = AUXOUTPUT1_PIN,          .group = PinGroup_AuxOutput },
+#endif
+#ifdef AUXOUTPUT2_PORT
+    { .id = Output_Aux2,            .port = AUXOUTPUT2_PORT,        .pin = AUXOUTPUT2_PIN,          .group = PinGroup_AuxOutput },
+#endif
+#ifdef AUXOUTPUT3_PORT
+    { .id = Output_Aux3,            .port = AUXOUTPUT3_PORT,        .pin = AUXOUTPUT3_PIN,          .group = PinGroup_AuxOutput },
+#endif
 };
 
 extern __IO uint32_t uwTick;
-static uint32_t pulse_length, pulse_delay;
+static uint32_t pulse_length, pulse_delay, aux_irq = 0;
 static bool IOInitDone = false;
 #ifdef SPINDLE_PWM_PIN
 static bool pwmEnabled = false;
@@ -189,6 +218,9 @@ static axes_signals_t next_step_outbits;
 static delay_t delay = { .ms = 1, .callback = NULL }; // NOTE: initial ms set to 1 for "resetting" systick timer on startup
 static on_unknown_sys_command_ptr on_unknown_sys_command;
 static debounce_t debounce;
+#ifndef STM32F103xB
+static periph_signal_t *periph_pins = NULL;
+#endif
 static probe_state_t probe = {
     .connected = On
 };
@@ -667,6 +699,21 @@ static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t 
     return prev;
 }
 
+#if MPG_MODE == 1
+
+static void mpg_select (sys_state_t state)
+{
+    stream_mpg_enable(DIGITAL_IN(MPG_MODE_PORT, MPG_MODE_PIN) == 0);
+}
+
+static void mpg_enable (sys_state_t state)
+{
+    if(sys.mpg_mode != (DIGITAL_IN(MPG_MODE_PORT, MPG_MODE_PIN) == 0))
+        stream_mpg_enable(true);
+}
+
+#endif
+
 static uint32_t getElapsedTicks (void)
 {
     return uwTick;
@@ -713,25 +760,25 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
         PULSE_TIMER->ARR = pulse_length;
         PULSE_TIMER->EGR = TIM_EGR_UG;
 
-#if DRIVER_IRQMASK & (1<<0)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<0)
         HAL_NVIC_DisableIRQ(EXTI0_IRQn);
 #endif
-#if DRIVER_IRQMASK & (1<<1)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<1)
         HAL_NVIC_DisableIRQ(EXTI1_IRQn);
 #endif
-#if DRIVER_IRQMASK & (1<<2)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<2)
         HAL_NVIC_DisableIRQ(EXTI2_IRQn);
 #endif
-#if DRIVER_IRQMASK & (1<<3)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<3)
         HAL_NVIC_DisableIRQ(EXTI3_IRQn);
 #endif
-#if DRIVER_IRQMASK & (1<<4)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<4)
         HAL_NVIC_DisableIRQ(EXTI4_IRQn);
 #endif
-#if DRIVER_IRQMASK & 0x03E0
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & 0x03E0
         HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
 #endif
-#if DRIVER_IRQMASK & 0xFC00
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & 0xFC00
         HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 #endif
 
@@ -817,7 +864,8 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
                     input->irq_mode = limit_fei.c ? IRQ_Mode_Falling : IRQ_Mode_Rising;
                     break;
 
-                case Input_ModeSelect:
+                case Input_MPGSelect:
+                    pullup = true;
                     input->irq_mode = IRQ_Mode_Change;
                     break;
 
@@ -834,6 +882,21 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
                 default:
                     break;
             }
+
+#if AUXINPUT_MASK
+
+            if(input->group == PinGroup_AuxInput) {
+                pullup = true;
+                if(input->cap.irq_mode != IRQ_Mode_None) {
+                    aux_irq |= input->bit;
+                    // Map interrupt to pin
+                    uint32_t extireg = AFIO->EXTICR[input->pin >> 2] & ~(0b1111 << ((input->pin & 0b11) << 2));
+                    extireg |= ((uint32_t)(GPIO_GET_INDEX(input->port)) << ((input->pin & 0b11) << 2));
+                    AFIO->EXTICR[input->pin >> 2] = extireg;
+                }
+            }
+
+#endif
 
             GPIO_Init.Pin = 1 << input->pin;
             GPIO_Init.Pull = pullup ? GPIO_PULLUP : GPIO_NOPULL;
@@ -858,35 +921,51 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
 
         } while(i);
 
-        __HAL_GPIO_EXTI_CLEAR_IT(DRIVER_IRQMASK);
+        uint32_t irq_mask = DRIVER_IRQMASK|aux_irq;
 
-#if DRIVER_IRQMASK & (1<<0)
-        HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 2);
-        HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+        __HAL_GPIO_EXTI_CLEAR_IT(irq_mask);
+
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<0)
+        if(irq_mask & (1<<0)) {
+            HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 2);
+            HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+        }
 #endif
-#if DRIVER_IRQMASK & (1<<1)
-        HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 2);
-        HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<1)
+        if(irq_mask & (1<<1)) {
+            HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 2);
+            HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+        }
 #endif
-#if DRIVER_IRQMASK & (1<<2)
-        HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 2);
-        HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<2)
+        if(irq_mask & (1<<2)) {
+            HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 2);
+            HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+        }
 #endif
-#if DRIVER_IRQMASK & (1<<3)
-        HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 2);
-        HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<3)
+        if(irq_mask & (1<<3)) {
+            HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 2);
+            HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+        }
 #endif
-#if DRIVER_IRQMASK & (1<<4)
-        HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 2);
-        HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<4)
+        if(irq_mask & (1<<0)) {
+            HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 2);
+            HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+        }
 #endif
-#if DRIVER_IRQMASK & 0x03E0
-        HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 2);
-        HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & 0x03E0
+        if(irq_mask & 0x03E0) {
+            HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 2);
+            HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+        }
 #endif
-#if DRIVER_IRQMASK & 0xFC00
-        HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 2);
-        HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & 0xFC00
+        if(irq_mask & 0xFC00) {
+            HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 2);
+            HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+        }
 #endif
     }
 
@@ -933,7 +1012,24 @@ static void enumeratePins (bool low_level, pin_info_ptr pin_info, void *data)
         pin_info(&pin, data);
     };
 
-#ifdef SPINDLE_PWM_PIN
+#ifndef STM32F103xB
+
+    periph_signal_t *ppin = periph_pins;
+
+    if(ppin) do {
+        pin.pin = ppin->pin.pin;
+        pin.function = ppin->pin.function;
+        pin.group = ppin->pin.group;
+        pin.port = low_level ? ppin->pin.port : (void *)port2char(ppin->pin.port);
+        pin.mode = ppin->pin.mode;
+        pin.description = ppin->pin.description;
+
+        pin_info(&pin, data);
+    } while((ppin = ppin->next));
+
+#endif
+
+#ifdef SPINDLE_PWM_TIMER_N
     pin.pin = SPINDLE_PWM_PIN;
     pin.function = Output_SpindlePWM;
     pin.group = PinGroup_SpindlePWM;
@@ -942,6 +1038,43 @@ static void enumeratePins (bool low_level, pin_info_ptr pin_info, void *data)
     pin_info(&pin, data);
 #endif
 }
+
+#ifndef STM32F103xB
+
+void registerPeriphPin (const periph_pin_t *pin)
+{
+    periph_signal_t *add_pin = malloc(sizeof(periph_signal_t));
+
+    if(!add_pin)
+        return;
+
+    memcpy(&add_pin->pin, pin, sizeof(periph_pin_t));
+    add_pin->next = NULL;
+
+    if(periph_pins == NULL) {
+        periph_pins = add_pin;
+    } else {
+        periph_signal_t *last = periph_pins;
+        while(last->next)
+            last = last->next;
+        last->next = add_pin;
+    }
+}
+
+void setPeriphPinDescription (const pin_function_t function, const pin_group_t group, const char *description)
+{
+    periph_signal_t *ppin = periph_pins;
+
+    if(ppin) do {
+        if(ppin->pin.function == function && ppin->pin.group == group) {
+            ppin->pin.description = description;
+            ppin = NULL;
+        } else
+            ppin = ppin->next;
+    } while(ppin);
+}
+
+#endif
 
 static status_code_t jtag_enable (uint_fast16_t state, char *line)
 {
@@ -1077,7 +1210,24 @@ bool driver_init (void)
     __enable_irq();
 #endif
 
-    // Enable EEPROM and serial port here for Grbl to be able to configure itself and report any errors
+#if MPG_MODE == 1
+
+    // Drive MPG mode input pin low until setup complete
+
+    GPIO_InitTypeDef GPIO_Init = {
+        .Speed = GPIO_SPEED_FREQ_HIGH,
+        .Mode = GPIO_MODE_OUTPUT_PP,
+        .Pin = 1 << MPG_MODE_PIN,
+        .Mode = GPIO_MODE_OUTPUT_PP
+    };
+
+    HAL_GPIO_Init(MPG_MODE_PORT, &GPIO_Init);
+
+    DIGITAL_OUT(MPG_MODE_PORT, MPG_MODE_PIN, 1);
+
+#endif
+
+    // Enable EEPROM and serial port here for the core to be able to configure itself and report any errors
 
     // GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE); // ??? Disable JTAG and SWD!?? Bug?
 
@@ -1087,8 +1237,12 @@ bool driver_init (void)
 
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
-    hal.info = "STM32F103C8";
-    hal.driver_version = "230129";
+#ifndef STM32F103xB
+    hal.info = "STM32F103RC";
+#else
+    hal.info = "STM32F103CB";
+#endif
+    hal.driver_version = "230316";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -1151,11 +1305,19 @@ bool driver_init (void)
     hal.set_value_atomic = valueSetAtomic;
     hal.get_elapsed_ticks = getElapsedTicks;
     hal.enumerate_pins = enumeratePins;
+#ifndef STM32F103xB
+    hal.periph_port.register_pin = registerPeriphPin;
+    hal.periph_port.set_pin_description = setPeriphPinDescription;
+#endif
+
+#if defined(SERIAL_MOD) || defined(SERIAL2_MOD)
+    serialRegisterStreams();
+#endif
 
 #if USB_SERIAL_CDC
     stream_connect(usbInit());
 #else
-    stream_connect(serialInit());
+    stream_connect(serialInit(115200));
 #endif
 
 #if EEPROM_ENABLE
@@ -1181,8 +1343,56 @@ bool driver_init (void)
     hal.driver_cap.limits_pull_up = On;
     hal.driver_cap.probe_pull_up = On;
 
+#ifndef STM32F103xB
+
+    uint32_t i;
+    input_signal_t *input;
+    static pin_group_pins_t aux_inputs = {0}, aux_outputs = {0};
+
+    for(i = 0 ; i < sizeof(inputpin) / sizeof(input_signal_t); i++) {
+        input = &inputpin[i];
+        if(input->group == PinGroup_AuxInput) {
+            if(aux_inputs.pins.inputs == NULL)
+                aux_inputs.pins.inputs = input;
+            input->id = (pin_function_t)(Input_Aux0 + aux_inputs.n_pins++);
+            input->bit = 1 << input->pin;
+            input->cap.pull_mode = PullMode_UpDown;
+            input->cap.irq_mode = (DRIVER_IRQMASK & input->bit) ? IRQ_Mode_None : IRQ_Mode_Edges;
+        }
+    }
+
+    output_signal_t *output;
+    for(i = 0 ; i < sizeof(outputpin) / sizeof(output_signal_t); i++) {
+        output = &outputpin[i];
+        if(output->group == PinGroup_AuxOutput) {
+            if(aux_outputs.pins.outputs == NULL)
+                aux_outputs.pins.outputs = output;
+            output->id = (pin_function_t)(Output_Aux0 + aux_outputs.n_pins++);
+        }
+    }
+
+  #ifdef HAS_IOPORTS
+    ioports_init(&aux_inputs, &aux_outputs);
+  #endif
+
+#endif
+
 #ifdef HAS_BOARD_INIT
     board_init();
+#endif
+
+#if MPG_MODE == 1
+  #if KEYPAD_ENABLE == 2
+    if((hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL), false, keypad_enqueue_keycode)))
+        protocol_enqueue_rt_command(mpg_enable);
+  #else
+    if((hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL), false, NULL)))
+        protocol_enqueue_rt_command(mpg_enable);
+  #endif
+#elif MPG_MODE == 2
+    hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL), false, keypad_enqueue_keycode);
+#elif KEYPAD_ENABLE == 2
+    stream_open_instance(KEYPAD_STREAM, 115200, keypad_enqueue_keycode);
 #endif
 
 #include "grbl/plugins_init.h"
@@ -1256,7 +1466,7 @@ void TIM4_IRQHandler (void)
     }
 }
 
-#if DRIVER_IRQMASK & (1<<0)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<0)
 
 void EXTI0_IRQHandler(void)
 {
@@ -1274,20 +1484,24 @@ void EXTI0_IRQHandler(void)
         } else
   #endif
         hal.control.interrupt_callback(systemGetState());
-#else
+#elif LIMIT_MASK & (1<<0)
         if(hal.driver_cap.software_debounce) {
             debounce.limits = On;
             DEBOUNCE_TIMER->EGR = TIM_EGR_UG;
             DEBOUNCE_TIMER->CR1 |= TIM_CR1_CEN; // Start debounce timer (40ms)
         } else
             hal.limits.interrupt_callback(limitsGetState());
+#elif AUXINPUT_MASK & (1<<0)
+        ioports_event(ifg);
+#elif MPG_MODE_BIT & (1<<0)
+    protocol_enqueue_rt_command(mpg_select);
 #endif
     }
 }
 
 #endif
 
-#if DRIVER_IRQMASK & (1<<1)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<1)
 
 void EXTI1_IRQHandler(void)
 {
@@ -1304,20 +1518,24 @@ void EXTI1_IRQHandler(void)
         } else
   #endif
         hal.control.interrupt_callback(systemGetState());
-#else
+#elif LIMIT_MASK & (1<<1)
         if(hal.driver_cap.software_debounce) {
             debounce.limits = On;
             DEBOUNCE_TIMER->EGR = TIM_EGR_UG;
             DEBOUNCE_TIMER->CR1 |= TIM_CR1_CEN; // Start debounce timer (40ms)
         } else
             hal.limits.interrupt_callback(limitsGetState());
+#elif AUXINPUT_MASK & (1<<1)
+        ioports_event(ifg);
+#elif MPG_MODE_BIT & (1<<1)
+        protocol_enqueue_rt_command(mpg_select);
 #endif
     }
 }
 
 #endif
 
-#if DRIVER_IRQMASK & (1<<2)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<2)
 
 void EXTI2_IRQHandler(void)
 {
@@ -1334,20 +1552,24 @@ void EXTI2_IRQHandler(void)
         } else
   #endif
         hal.control.interrupt_callback(systemGetState());
-#else
+#elif LIMIT_MASK & (1<<2)
         if(hal.driver_cap.software_debounce) {
             debounce.limits = On;
             DEBOUNCE_TIMER->EGR = TIM_EGR_UG;
             DEBOUNCE_TIMER->CR1 |= TIM_CR1_CEN; // Start debounce timer (40ms)
         } else
             hal.limits.interrupt_callback(limitsGetState());
+#elif AUXINPUT_MASK & (1<<2)
+        ioports_event(ifg);
+#elif MPG_MODE_BIT & (1<<2)
+        protocol_enqueue_rt_command(mpg_select);
 #endif
     }
 }
 
 #endif
 
-#if DRIVER_IRQMASK & (1<<3)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<3)
 
 void EXTI3_IRQHandler(void)
 {
@@ -1364,20 +1586,24 @@ void EXTI3_IRQHandler(void)
         } else
   #endif
         hal.control.interrupt_callback(systemGetState());
-#else
+#elif LIMIT_MASK & (1<<3)
         if(hal.driver_cap.software_debounce) {
             debounce.limits = On;
             DEBOUNCE_TIMER->EGR = TIM_EGR_UG;
             DEBOUNCE_TIMER->CR1 |= TIM_CR1_CEN; // Start debounce timer (40ms)
         } else
             hal.limits.interrupt_callback(limitsGetState());
+#elif AUXINPUT_MASK & (1<<3)
+        ioports_event(ifg);
+#elif MPG_MODE_BIT & (1<<3)
+        protocol_enqueue_rt_command(mpg_select);
 #endif
     }
 }
 
 #endif
 
-#if DRIVER_IRQMASK & (1<<4)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<4)
 
 void EXTI4_IRQHandler(void)
 {
@@ -1386,7 +1612,7 @@ void EXTI4_IRQHandler(void)
     if(ifg) {
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if CONTROL_MASK & (1<<4)
-  #if SAFETY_DOOR_BIT & (1<<2)
+  #if SAFETY_DOOR_BIT & (1<<4)
         if(hal.driver_cap.software_debounce) {
             debounce.door = On;
             DEBOUNCE_TIMER->EGR = TIM_EGR_UG;
@@ -1394,20 +1620,24 @@ void EXTI4_IRQHandler(void)
         } else
   #endif
         hal.control.interrupt_callback(systemGetState());
-#else
+#elif LIMIT_MASK & (1<<4)
         if(hal.driver_cap.software_debounce) {
             debounce.limits = On;
             DEBOUNCE_TIMER->EGR = TIM_EGR_UG;
             DEBOUNCE_TIMER->CR1 |= TIM_CR1_CEN; // Start debounce timer (40ms)
         } else
             hal.limits.interrupt_callback(limitsGetState());
+#elif AUXINPUT_MASK & (1<<4)
+        ioports_event(ifg);
+#elif MPG_MODE_BIT & (1<<4)
+        protocol_enqueue_rt_command(mpg_select);
 #endif
     }
 }
 
 #endif
 
-#if DRIVER_IRQMASK & (0x03E0)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (0x03E0)
 
 void EXTI9_5_IRQHandler(void)
 {
@@ -1438,12 +1668,20 @@ void EXTI9_5_IRQHandler(void)
                 hal.limits.interrupt_callback(limitsGetState());
         }
 #endif
+#if AUXINPUT_MASK & 0x03E0
+        if(ifg & aux_irq)
+            ioports_event(ifg & aux_irq);
+#endif
+#if MPG_MODE_BIT & 0x03E0
+        if(ifg & MPG_MODE_BIT)
+            protocol_enqueue_rt_command(mpg_select);
+#endif
     }
 }
 
 #endif
 
-#if DRIVER_IRQMASK & (0xFC00)
+#if (DRIVER_IRQMASK|AUXINPUT_MASK) & (0xFC00)
 
 void EXTI15_10_IRQHandler(void)
 {
@@ -1477,6 +1715,14 @@ void EXTI15_10_IRQHandler(void)
 #if I2C_STROBE_ENABLE
         if((ifg & I2C_STROBE_BIT) && i2c_strobe.callback)
             i2c_strobe.callback(0, BITBAND_PERI(I2C_STROBE_PORT->IDR, I2C_STROBE_PIN) == 0);
+#endif
+#if AUXINPUT_MASK & 0xFC00
+        if(ifg & aux_irq)
+            ioports_event(ifg & aux_irq);
+#endif
+#if MPG_MODE_BIT & 0xFC00
+        if(ifg & MPG_MODE_BIT)
+            protocol_enqueue_rt_command(mpg_select);
 #endif
     }
 }

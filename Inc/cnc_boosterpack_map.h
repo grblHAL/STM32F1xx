@@ -1,5 +1,5 @@
 /*
-  cnc_boosterpack_map.h - driver code for STM32F4xx processor (on Blackpill board)
+  cnc_boosterpack_map.h - driver code for STM32F103xx processor (on Bluepill board)
 
   Part of grblHAL
 
