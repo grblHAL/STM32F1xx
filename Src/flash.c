@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2019-2020 Terje Io
+  Copyright (c) 2019-2023 Terje Io
 
   This code reads/writes the whole RAM-based emulated EPROM contents from/to flash
 
@@ -29,17 +29,18 @@
 #include "grbl/hal.h"
 #include "stm32f1xx_hal_flash_ex.h"
 
-static const uint8_t *flash_target = (uint8_t *)(FLASH_BANK1_END - FLASH_PAGE_SIZE * 2 + 1);    // Last page start adress
+extern void *_EEPROM_Emul_Start;
+extern uint8_t _EEPROM_Emul_Sector;
 
 bool memcpy_from_flash (uint8_t *dest)
 {
-    memcpy(dest, flash_target, hal.nvs.size);
+    memcpy(dest, &_EEPROM_Emul_Start, hal.nvs.size);
     return true;
 }
 
 bool memcpy_to_flash (uint8_t *source)
 {
-    if (!memcmp(source, flash_target, hal.nvs.size))
+    if (!memcmp(source, &_EEPROM_Emul_Start, hal.nvs.size))
         return true;
 
     HAL_FLASH_Unlock();
@@ -47,8 +48,8 @@ bool memcpy_to_flash (uint8_t *source)
     FLASH_EraseInitTypeDef erase = {
         .Banks = FLASH_BANK_1,
         .TypeErase = FLASH_TYPEERASE_PAGES,
-        .NbPages = 2,
-        .PageAddress = (uint32_t)flash_target
+        .NbPages = (uint32_t)&_EEPROM_Emul_Sector,
+        .PageAddress = (uint32_t)&_EEPROM_Emul_Start
     };
 
     uint32_t error;
@@ -56,7 +57,7 @@ bool memcpy_to_flash (uint8_t *source)
     HAL_StatusTypeDef status = HAL_FLASHEx_Erase(&erase, &error);
 
     uint16_t *data = (uint16_t *)source;
-    uint32_t address = (uint32_t)flash_target, remaining = (uint32_t)hal.nvs.size;
+    uint32_t address = (uint32_t)&_EEPROM_Emul_Start, remaining = (uint32_t)hal.nvs.size;
 
     while(remaining && status == HAL_OK) {
         status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, address, *data++);

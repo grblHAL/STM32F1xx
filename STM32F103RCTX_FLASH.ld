@@ -39,9 +39,13 @@ LD_VECT_TAB_OFFSET = DEFINED(LD_VECT_TAB_OFFSET)? LD_VECT_TAB_OFFSET : 0;
 /* Memories definition */
 MEMORY
 {
-    RAM        (xrw)   : ORIGIN = 0x20000000,                     LENGTH = 48K
-    FLASH      (rx)    : ORIGIN = 0x8000000+LD_VECT_TAB_OFFSET,   LENGTH = 256K-LD_VECT_TAB_OFFSET
+  RAM(xrw)         : ORIGIN = 0x20000000,                   LENGTH = 48K
+  EEPROM_EMUL(xrw) : ORIGIN = 0x802F000,                    LENGTH = 4K
+  FLASH(rx)        : ORIGIN = 0x8000000+LD_VECT_TAB_OFFSET, LENGTH = 256K-2K-LD_VECT_TAB_OFFSET
 }
+
+_EEPROM_Emul_Start = ORIGIN(EEPROM_EMUL);
+_EEPROM_Emul_Sector = 2;
 
 /* Sections */
 SECTIONS

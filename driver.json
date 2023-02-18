@@ -97,6 +97,27 @@
           "STM32F103xE": "",
           "HAS_BOOTLOADER": ""
       }
+    },
+    {
+      "name": "Mach3 USB breakout (BSMCE04U)",
+      "symbol": "BOARD_MACH3_BOB",
+      "URL": "https://embeddedtronicsblog.wordpress.com/2021/02/05/4-axis-mach3-controller/",
+      "caps": {
+        "axes": 5,
+        "auto_square": 0,
+        "digital_in": 0,
+        "digital_out": 1,
+        "eeprom": 0,
+        "fram": 0,
+        "i2c": 0,
+        "sdcard": 0,
+        "trinamic": 0,
+        "pio_board": "genericSTM32F103RC",
+        "ldscript": "STM32F103C8TX_FLASH.ld"
+      },
+      "symbols": {
+          "STM32F103xE": ""
+      }
     }    
   ]
 }

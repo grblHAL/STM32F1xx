@@ -57,12 +57,12 @@ Programming port, top view (not mounted)
 #error "This board has a STM32F10RCT6 processor, select a corresponding build!"
 #endif
 
-#if N_ABC_MOTORS > 1
+#if N_ABC_MOTORS > 1 || N_GANGED
 #error "Axis configuration is not supported!"
 #endif
 
 #define BOARD_NAME "MACH3 USB BOB (BSMCE04U)"
-#define BOARD_URL "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3"
+//#define BOARD_URL ""
 
 #define SERIAL_MOD 5 // Tx: 10pin IDC, 10 - Rx: 10pin IDC, 9
 #define HAS_BOARD_INIT

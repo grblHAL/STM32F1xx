@@ -42,7 +42,7 @@
 #define USART UART5
 #define USART_IRQ UART5_IRQn
 #define USART_IRQHandler UART5_IRQHandler
-#define USART_CLK HAL_RCC_GetPCLK2Freq //?
+#define USART_CLK HAL_RCC_GetPCLK1Freq
 #define USART_CLK_ENABLE __HAL_RCC_UART5_CLK_ENABLE
 #endif
 
