@@ -113,7 +113,7 @@
         "sdcard": 0,
         "trinamic": 0,
         "pio_board": "genericSTM32F103RC",
-        "ldscript": "STM32F103C8TX_FLASH.ld"
+        "ldscript": "STM32F103RCTX_FLASH.ld"
       },
       "symbols": {
           "STM32F103xE": ""
