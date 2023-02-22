@@ -3,7 +3,7 @@
 
   Part of grblHAL driver for STM32F103xx
 
-  Copyright (c) 2018-2021 Terje Io
+  Copyright (c) 2018-2023 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@
 
 #define I2CPORT I2Cport(I2C_PORT)
 
+static uint8_t keycode = 0;
+static keycode_callback_ptr keypad_callback = NULL;
 static I2C_HandleTypeDef i2c_port = {
     .Instance = I2CPORT,
     .Init.ClockSpeed = 100000,
@@ -74,6 +76,27 @@ void I2C2_ER_IRQHandler(void)
 }
 #endif
 
+bool i2c_probe (uint_fast16_t i2cAddr)
+{
+    //wait for bus to be ready
+    while (HAL_I2C_GetState(&i2c_port) != HAL_I2C_STATE_READY) {
+        if(!hal.stream_blocking_callback())
+            return false;
+    }
+
+    return HAL_I2C_IsDeviceReady(&i2c_port, i2cAddr << 1, 4, 10) == HAL_OK;
+}
+
+void i2c_get_keycode (uint_fast16_t i2cAddr, keycode_callback_ptr callback)
+{
+    keycode = 0;
+    keypad_callback = callback;
+
+    HAL_StatusTypeDef ret = HAL_I2C_Master_Receive_IT(&i2c_port, i2cAddr << 1, &keycode, 1);
+
+    if(!ret)
+        ret = HAL_I2C_Master_Receive_IT(&i2c_port, i2cAddr << 1, &keycode, 1);
+}
 
 #if EEPROM_ENABLE
 
@@ -98,22 +121,6 @@ nvs_transfer_result_t i2c_nvs_transfer (nvs_transfer_t *i2c, bool read)
 
 #endif
 
-#if KEYPAD_ENABLE == 1
-
-static uint8_t keycode = 0;
-static keycode_callback_ptr keypad_callback = NULL;
-
-void I2C_GetKeycode (uint32_t i2cAddr, keycode_callback_ptr callback)
-{
-    keycode = 0;
-    keypad_callback = callback;
-
-    HAL_StatusTypeDef ret = HAL_I2C_Master_Receive_IT(&i2c_port, KEYPAD_I2CADDR << 1, &keycode, 1);
-
-    if(!ret)
-        ret = HAL_I2C_Master_Receive_IT(&i2c_port, KEYPAD_I2CADDR << 1, &keycode, 1);
-}
-
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
     if(keypad_callback && keycode != 0) {
@@ -121,8 +128,6 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
         keypad_callback = NULL;
     }
 }
-
-#endif
 
 #if TRINAMIC_ENABLE && TRINAMIC_I2C
 
