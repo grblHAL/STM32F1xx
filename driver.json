@@ -40,9 +40,9 @@
         "auto_square": 0,
         "digital_in": 4,
         "digital_out": 6,
-        "eeprom": 1,
-        "fram": 1,
-        "i2c": 1,
+        "eeprom": 0,
+        "fram": 0,
+        "i2c": 0,
         "sdcard": 0,
         "trinamic": 0
       },
