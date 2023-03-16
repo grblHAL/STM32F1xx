@@ -118,6 +118,28 @@
       "symbols": {
           "STM32F103xE": ""
       }
+    },
+    {
+      "name": "SVM F103RC",
+      "symbol": "BOARD_BTT_SKR_MINI_E3_V20_ALT2",
+      "URL": "https://github.com/grblHAL/core/discussions/250",
+      "caps": {
+        "axes": 6,
+        "digital_in": 0,
+        "digital_out": 0,
+        "eeprom": 0,
+        "fram": 0,
+        "i2c": 0,
+        "sdcard": 0,
+        "keypad": 0,
+        "trinamic": 0,
+        "pio_board": "genericSTM32F103RC",
+        "ldscript": "STM32F103RCTX_FLASH.ld"
+      },
+      "symbols": {
+          "STM32F103xE": "",
+          "HAS_BOOTLOADER": ""
+      }
     }    
   ]
 }
