@@ -494,7 +494,7 @@ static control_signals_t systemGetState (void)
  #endif
 #else
     signals.value = (uint8_t)((CONTROL_PORT->IDR & CONTROL_MASK) >> CONTROL_INMODE);
- #ifndef SAFETY_DOOR_PIN
+ #ifdef SAFETY_DOOR_PIN
  	signals.safety_door_ajar = settings.control_invert.safety_door_ajar;
  #endif
 #endif
@@ -988,7 +988,7 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
         }
 #endif
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<4)
-        if(irq_mask & (1<<0)) {
+        if(irq_mask & (1<<4)) {
             HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 2);
             HAL_NVIC_EnableIRQ(EXTI4_IRQn);
         }
@@ -1280,7 +1280,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "230331";
+    hal.driver_version = "230424";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;

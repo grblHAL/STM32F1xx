@@ -101,6 +101,8 @@
   #include "mach3_bob_map.h"
 #elif defined(BOARD_MY_MACHINE)
   #include "my_machine_map.h"
+#elif defined(BOARD_SVM)
+  #include "svm_map.h"
 #else // default board
   #include "generic_map.h"
 #endif
