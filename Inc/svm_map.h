@@ -29,7 +29,7 @@
 
 #define BOARD_NAME "SVM"
 
-#if N_ABC_MOTORS > 3 || N_GANGED
+#if N_ABC_MOTORS > 3
 #error Axis configuration is not supported!
 #endif
 

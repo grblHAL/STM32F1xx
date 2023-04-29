@@ -57,7 +57,7 @@ Programming port, top view (not mounted)
 #error "This board has a STM32F10RCT6 processor, select a corresponding build!"
 #endif
 
-#if N_ABC_MOTORS > 1 || N_GANGED
+#if N_ABC_MOTORS > 1
 #error "Axis configuration is not supported!"
 #endif
 

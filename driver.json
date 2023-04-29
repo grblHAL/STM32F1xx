@@ -58,6 +58,7 @@
       "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
       "caps": {
         "axes": 4,
+		"auto_square": 1,
         "digital_in": 0,
         "digital_out": 0,
         "eeprom": 3,
@@ -81,6 +82,7 @@
       "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
       "caps": {
         "axes": 4,
+		"auto_square": 1,
         "digital_in": 0,
         "digital_out": 0,
         "eeprom": 3,
@@ -103,8 +105,8 @@
       "symbol": "BOARD_MACH3_BOB",
       "URL": "https://embeddedtronicsblog.wordpress.com/2021/02/05/4-axis-mach3-controller/",
       "caps": {
-        "axes": 5,
-        "auto_square": 0,
+        "axes": 4,
+        "auto_square": 1,
         "digital_in": 0,
         "digital_out": 1,
         "eeprom": 0,
@@ -125,6 +127,7 @@
       "URL": "https://github.com/grblHAL/core/discussions/250",
       "caps": {
         "axes": 6,
+        "auto_square": 3,
         "digital_in": 0,
         "digital_out": 0,
         "eeprom": 0,

@@ -21,7 +21,9 @@
 #error "This board has a STM32F10RCT6 processor, select a corresponding build!"
 #endif
 
-#if N_ABC_MOTORS > 1 || N_GANGED
+#if SAFETY_DOOR_ENABLE && N_AUTO_SQUARED
+#error "Axis configuration is not supported when safety door is enabled!"
+#elif N_ABC_MOTORS > 1
 #error "Axis configuration is not supported!"
 #endif
 
@@ -89,6 +91,10 @@
 #define M3_DIRECTION_PIN        4
 #define M3_ENABLE_PORT          GPIOD
 #define M3_ENABLE_PIN           2
+#if N_AUTO_SQUARED && !SAFETY_DOOR_ENABLE
+#define M3_LIMIT_PORT           GPIOB
+#define M3_LIMIT_PIN            3
+#endif
 #endif
 
   // Define spindle enable and spindle direction output pins.
