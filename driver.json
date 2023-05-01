@@ -35,6 +35,7 @@
       "name": "CNC 3040 (Red/Bluepill 128K)",
       "symbol": "BOARD_CNC3040",
       "URL": "https://github.com/shaise/GrblCNC",
+      "MAP": "Inc/cnc3040_map.h",
       "caps": {
         "axes": 5,
         "auto_square": 0,
@@ -56,6 +57,7 @@
       "name": "BTT SKR MINI E3 V2.0 4-axis (Bootloader)",
       "symbol": "BOARD_BTT_SKR_MINI_E3_V20",
       "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
+      "MAP": "Inc/btt_skr_mini_e3_2.0_map.h",
       "caps": {
         "axes": 4,
 		"auto_square": 1,
@@ -80,6 +82,7 @@
       "name": "BTT SKR MINI E3 V2.0 4-axis Alt2 (Bootloader)",
       "symbol": "BOARD_BTT_SKR_MINI_E3_V20_ALT2",
       "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
+      "MAP": "Inc/btt_skr_mini_e3_2.0_alt2_map.h",
       "caps": {
         "axes": 4,
 		"auto_square": 1,
@@ -104,6 +107,7 @@
       "name": "Mach3 USB breakout (BSMCE04U)",
       "symbol": "BOARD_MACH3_BOB",
       "URL": "https://embeddedtronicsblog.wordpress.com/2021/02/05/4-axis-mach3-controller/",
+      "MAP": "Inc/mach3_bob_map.h",
       "caps": {
         "axes": 4,
         "auto_square": 1,
@@ -123,8 +127,9 @@
     },
     {
       "name": "SVM F103RC",
-      "symbol": "BOARD_BTT_SKR_MINI_E3_V20_ALT2",
+      "symbol": "BOARD_SVM",
       "URL": "https://github.com/grblHAL/core/discussions/250",
+      "MAP": "Inc/svm_map.h",
       "caps": {
         "axes": 6,
         "auto_square": 3,
