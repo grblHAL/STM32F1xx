@@ -126,6 +126,29 @@
       }
     },
     {
+      "name": "Mach3 USB breakout (BSMCE04U), 12 MHz crystal",
+      "symbol": "BOARD_MACH3_BOB",
+      "URL": "https://embeddedtronicsblog.wordpress.com/2021/02/05/4-axis-mach3-controller/",
+      "MAP": "Inc/mach3_bob_map.h",
+      "caps": {
+        "axes": 4,
+        "auto_square": 1,
+        "digital_in": 0,
+        "digital_out": 1,
+        "eeprom": 0,
+        "fram": 0,
+        "i2c": 0,
+        "sdcard": 0,
+        "trinamic": 0,
+        "pio_board": "genericSTM32F103RC",
+        "ldscript": "STM32F103RCTX_FLASH.ld"
+      },
+      "symbols": {
+          "STM32F103xE": "",
+         " HSE_VALUE": 12000000
+      }
+    },
+    {
       "name": "SVM F103RC",
       "symbol": "BOARD_SVM",
       "URL": "https://github.com/grblHAL/core/discussions/250",
