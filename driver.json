@@ -106,7 +106,7 @@
     {
       "name": "Mach3 USB breakout (BSMCE04U)",
       "symbol": "BOARD_MACH3_BOB",
-      "URL": "https://embeddedtronicsblog.wordpress.com/2021/02/05/4-axis-mach3-controller/",
+      "URL": "https://embeddedtronicsblog.wordpress.com/2023/05/17/grbl-running-on-the-4-axis-bsmce04-pp/,
       "MAP": "Inc/mach3_bob_map.h",
       "caps": {
         "axes": 4,
@@ -168,8 +168,7 @@
         "ldscript": "STM32F103RCTX_FLASH.ld"
       },
       "symbols": {
-          "STM32F103xE": "",
-          "HAS_BOOTLOADER": ""
+          "STM32F103xE": ""
       }
     }    
   ]
