@@ -347,11 +347,10 @@ static void stepperWakeUp (void)
 {
     stepperEnable((axes_signals_t){AXES_BITMASK});
 
-    STEPPER_TIMER->ARR = 5000; // delay to allow drivers time to wake up
+    STEPPER_TIMER->ARR = hal.f_step_timer / 500; // ~2ms delay to allow drivers time to wake up.
     STEPPER_TIMER->EGR = TIM_EGR_UG;
+    STEPPER_TIMER->SR = ~TIM_SR_UIF;
     STEPPER_TIMER->CR1 |= TIM_CR1_CEN;
-
-//    hal.stepper.interrupt_callback();   // and start the show
 }
 
 // Disables stepper driver interrupts
@@ -882,14 +881,21 @@ bool spindleConfig (spindle_ptrs_t *spindle)
     if(spindle == NULL)
         return false;
 
-    if((spindle->cap.variable = !settings.spindle.flags.pwm_disable && spindle_precompute_pwm_values(spindle, &spindle_pwm, SystemCoreClock / (settings.spindle.pwm_freq > 200.0f ? 1 : 25)))) {
+    uint32_t prescaler = 1;
+
+    if((spindle->cap.variable = !settings.spindle.flags.pwm_disable && spindle_precompute_pwm_values(spindle, &spindle_pwm, SystemCoreClock))) {
+
+        while(spindle_pwm.period > 65534) {
+            prescaler++;
+            spindle_precompute_pwm_values(spindle, &spindle_pwm, SystemCoreClock / prescaler);
+        }
 
         spindle->set_state = spindleSetStateVariable;
 
         SPINDLE_PWM_TIMER->CR1 &= ~TIM_CR1_CEN;
 
         TIM_Base_InitTypeDef timerInitStructure = {
-            .Prescaler = (settings.spindle.pwm_freq > 200.0f ? 1 : 25) - 1,
+            .Prescaler = prescaler - 1,
             .CounterMode = TIM_COUNTERMODE_UP,
             .Period = spindle_pwm.period - 1,
             .ClockDivision = TIM_CLOCKDIVISION_DIV1,
@@ -1542,7 +1548,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "230429";
+    hal.driver_version = "230526";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
