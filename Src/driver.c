@@ -103,7 +103,11 @@ static axes_signals_t motors_1 = {AXES_BITMASK}, motors_2 = {AXES_BITMASK};
 #endif
 
 static input_signal_t inputpin[] = {
+#if ESTOP_ENABLE
+    { .id = Input_EStop,          .port = RESET_PORT,       .pin = RESET_PIN,           .group = PinGroup_Control },
+#else
     { .id = Input_Reset,          .port = RESET_PORT,       .pin = RESET_PIN,           .group = PinGroup_Control },
+#endif
     { .id = Input_FeedHold,       .port = FEED_HOLD_PORT,   .pin = FEED_HOLD_PIN,       .group = PinGroup_Control },
     { .id = Input_CycleStart,     .port = CYCLE_START_PORT, .pin = CYCLE_START_PIN,     .group = PinGroup_Control },
 #if SAFETY_DOOR_ENABLE
@@ -735,7 +739,11 @@ static control_signals_t systemGetState (void)
     signals.value = settings.control_invert.mask;
 
 #if CONTROL_INMODE == GPIO_BITBAND
+#if ESTOP_ENABLE
+    signals.e_stop = BITBAND_PERI(RESET_PORT->IDR, RESET_PIN);
+#else
     signals.reset = BITBAND_PERI(CONTROL_PORT->IDR, RESET_PIN);
+#endif
     signals.feed_hold = BITBAND_PERI(CONTROL_PORT->IDR, FEED_HOLD_PIN);
     signals.cycle_start = BITBAND_PERI(CONTROL_PORT->IDR, CYCLE_START_PIN);
  #ifdef SAFETY_DOOR_PIN
@@ -743,7 +751,11 @@ static control_signals_t systemGetState (void)
  #endif
 #elif CONTROL_INMODE == GPIO_MAP
     uint32_t bits = CONTROL_PORT->IDR;
+ #if ESTOP_ENABLE
+    signals.e_stop = (bits & RESET_BIT) != 0;
+ #else
     signals.reset = (bits & RESET_BIT) != 0;
+ #endif
     signals.feed_hold = (bits & FEED_HOLD_BIT) != 0;
     signals.cycle_start = (bits & CYCLE_START_BIT) != 0;
  #ifdef SAFETY_DOOR_PIN
@@ -753,6 +765,10 @@ static control_signals_t systemGetState (void)
     signals.value = (uint8_t)((CONTROL_PORT->IDR & CONTROL_MASK) >> CONTROL_INMODE);
  #ifdef SAFETY_DOOR_PIN
  	signals.safety_door_ajar = settings.control_invert.safety_door_ajar;
+ #endif
+ #if ESTOP_ENABLE
+    signals.e_stop = signals.reset;
+    signals.reset = settings.control_invert.reset;
  #endif
 #endif
 
@@ -1548,7 +1564,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "230526";
+    hal.driver_version = "230613";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -1644,6 +1660,9 @@ bool driver_init (void)
 
   // driver capabilities, used for announcing and negotiating (with Grbl) driver functionality
 
+#if ESTOP_ENABLE
+    hal.signals_cap.e_stop = On;
+#endif
 #ifdef SAFETY_DOOR_PIN
     hal.signals_cap.safety_door_ajar = On;
 #endif

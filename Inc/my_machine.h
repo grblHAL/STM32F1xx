@@ -21,7 +21,7 @@
 
 // NOTE: Only one board may be enabled!
 // If none is enabled pin mappings from generic_map.h will be used.
-//#define BOARD_CNC3040
+#define BOARD_CNC3040
 //#define BOARD_CNC_BOOSTERPACK
 //#define BOARD_MACH3_BOB
 //#define BOARD_BTT_SKR_MINI_E3_V20
@@ -48,6 +48,8 @@
 //#define TRINAMIC_DEV       1 // Development mode, adds a few M-codes to aid debugging. Do not enable in production code.
 //#define EEPROM_ENABLE      1 // I2C EEPROM support. Set to 1 for 24LC16(2K), 2 for larger sizes. Requires eeprom plugin.
 //#define EEPROM_IS_FRAM     1 // Uncomment when EEPROM is enabled and chip is FRAM, this to remove write delay.
+//#define ESTOP_ENABLE       0 // When enabled only real-time report requests will be executed when the reset pin is asserted.
+                               // Note: if left commented out the default setting is determined from COMPATIBILITY_LEVEL.
 
 // If the selected board map supports more than three motors ganging and/or auto-squaring
 // of axes can be enabled here.
