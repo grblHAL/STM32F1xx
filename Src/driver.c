@@ -1135,11 +1135,17 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
 
             switch(input->id) {
 
+#if ESTOP_ENABLE
+                case Input_EStop:
+                    pullup = !settings->control_disable_pullup.e_stop;
+                    input->irq_mode = control_fei.e_stop ? IRQ_Mode_Falling : IRQ_Mode_Rising;
+                    break;
+#else
                 case Input_Reset:
                     pullup = !settings->control_disable_pullup.reset;
                     input->irq_mode = control_fei.reset ? IRQ_Mode_Falling : IRQ_Mode_Rising;
                     break;
-
+#endif
                 case Input_FeedHold:
                     pullup = !settings->control_disable_pullup.feed_hold;
                     input->irq_mode = control_fei.feed_hold ? IRQ_Mode_Falling : IRQ_Mode_Rising;
@@ -1233,7 +1239,7 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
 #endif
 
             GPIO_Init.Pin = 1 << input->pin;
-            GPIO_Init.Pull = pullup ? GPIO_PULLUP : GPIO_NOPULL;
+            GPIO_Init.Pull = pullup ? GPIO_PULLUP : GPIO_PULLDOWN;
 
             switch(input->irq_mode) {
                 case IRQ_Mode_Rising:
@@ -1576,7 +1582,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "230702";
+    hal.driver_version = "230711";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -1674,6 +1680,7 @@ bool driver_init (void)
 
 #if ESTOP_ENABLE
     hal.signals_cap.e_stop = On;
+    hal.signals_cap.reset = Off;
 #endif
 #ifdef SAFETY_DOOR_PIN
     hal.signals_cap.safety_door_ajar = On;
