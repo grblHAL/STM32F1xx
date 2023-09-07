@@ -125,6 +125,11 @@
     #define SPINDLE_PWM_TIMER_CH    1
     #define SPINDLE_PWM_TIMER_INV   0
     #define SPINDLE_PWM_AF_REMAP    0
+  #elif SPINDLE_PWM_PIN == 10 // PA10 - TIM1_CH3
+    #define SPINDLE_PWM_TIMER_N     1
+    #define SPINDLE_PWM_TIMER_CH    3
+    #define SPINDLE_PWM_TIMER_INV   0
+    #define SPINDLE_PWM_AF_REMAP    0
   #elif SPINDLE_PWM_PIN == 1 // PA1 - TIM2_CH2
     #define SPINDLE_PWM_TIMER_N 2
     #define SPINDLE_PWM_TIMER_CH 2
