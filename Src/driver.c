@@ -257,6 +257,7 @@ static bool pwmEnabled = false;
 static spindle_pwm_t spindle_pwm;
 static void spindle_set_speed (uint_fast16_t pwm_value);
 #endif
+static pin_group_pins_t limit_inputs = {0};
 static spindle_id_t spindle_id = -1;
 static axes_signals_t next_step_outbits;
 static delay_t delay = { .ms = 1, .callback = NULL }; // NOTE: initial ms set to 1 for "resetting" systick timer on startup
@@ -657,12 +658,22 @@ static void stepperPulseStartDelayed (stepper_t *stepper)
 // Enable/disable limit pins interrupt
 static void limitsEnable (bool on, axes_signals_t homing_cycle)
 {
-    if(on && homing_cycle.mask == 0) {
-        EXTI->PR |= LIMIT_MASK;     // Clear any pending limit interrupts
-        EXTI->IMR |= LIMIT_MASK;    // and enable
-    } else
-        EXTI->IMR &= ~LIMIT_MASK;
+    bool disable = !on;
+    axes_signals_t pin;
+    input_signal_t *limit;
+    uint_fast8_t idx = limit_inputs.n_pins;
+    limit_signals_t homing_source = xbar_get_homing_source_from_cycle(homing_cycle);
+
+    do {
+        limit = &limit_inputs.pins.inputs[--idx];
+        if(on && homing_cycle.mask) {
+            pin = xbar_fn_to_axismask(limit->id);
+            disable = limit->group == PinGroup_Limit ? (pin.mask & homing_source.min.mask) : (pin.mask & homing_source.max.mask);
+        }
+        gpio_irq_enable(limit, disable ? IRQ_Mode_None : limit->irq_mode);
+    } while(idx);
 }
+
 
 // Returns limit state as an axes_signals_t variable.
 // Each bitfield bit indicates an axis limit, where triggered is 1 and not triggered is 0.
@@ -1047,6 +1058,24 @@ static void mpg_enable (sys_state_t state)
 static uint32_t getElapsedTicks (void)
 {
     return uwTick;
+}
+
+void gpio_irq_enable (const input_signal_t *input, pin_irq_mode_t irq_mode)
+{
+    if(irq_mode == IRQ_Mode_Rising) {
+        EXTI->RTSR |= input->bit;
+        EXTI->FTSR &= ~input->bit;
+    } else if(irq_mode == IRQ_Mode_Falling) {
+        EXTI->RTSR &= ~input->bit;
+        EXTI->FTSR |= input->bit;
+    } else if(irq_mode == IRQ_Mode_Change) {
+        EXTI->RTSR |= input->bit;
+        EXTI->FTSR |= input->bit;
+    } else
+        EXTI->IMR &= ~input->bit;   // Disable pin interrupt
+
+    if(irq_mode != IRQ_Mode_None)
+        EXTI->IMR |= input->bit;    // Enable pin interrupt
 }
 
 // Configures peripherals when settings are initialized or changed
@@ -1710,6 +1739,10 @@ bool driver_init (void)
             input->bit = 1 << input->pin;
             input->cap.pull_mode = PullMode_UpDown;
             input->cap.irq_mode = (DRIVER_IRQMASK & input->bit) ? IRQ_Mode_None : IRQ_Mode_Edges;
+        } else if(input->group & (PinGroup_Limit|PinGroup_LimitMax)) {
+            if(limit_inputs.pins.inputs == NULL)
+                limit_inputs.pins.inputs = input;
+            limit_inputs.n_pins++;
         }
     }
 
@@ -1727,7 +1760,21 @@ bool driver_init (void)
     ioports_init(&aux_inputs, &aux_outputs);
   #endif
 
-#endif
+#else
+
+    uint32_t i;
+    input_signal_t *input;
+
+    for(i = 0 ; i < sizeof(inputpin) / sizeof(input_signal_t); i++) {
+        input = &inputpin[i];
+        if(input->group & (PinGroup_Limit|PinGroup_LimitMax)) {
+            if(limit_inputs.pins.inputs == NULL)
+                limit_inputs.pins.inputs = input;
+            limit_inputs.n_pins++;
+        }
+    }
+
+#endif // STM32F103xB
 
 #ifdef HAS_BOARD_INIT
     board_init();
