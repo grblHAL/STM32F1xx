@@ -1476,6 +1476,13 @@ static bool driver_setup (settings_t *settings)
 
     uint32_t i;
     for(i = 0 ; i < sizeof(outputpin) / sizeof(output_signal_t); i++) {
+
+        if(outputpin[i].group == PinGroup_MotorChipSelect ||
+            outputpin[i].group == PinGroup_MotorUART ||
+             outputpin[i].id == Output_SPICS ||
+              outputpin[i].group == PinGroup_StepperEnable)
+            DIGITAL_OUT(outputpin[i].port, outputpin[i].pin, 1);
+
         GPIO_Init.Pin = 1 << outputpin[i].pin;
         GPIO_Init.Mode = outputpin[i].mode.open_drain ? GPIO_MODE_OUTPUT_OD : GPIO_MODE_OUTPUT_PP;
         HAL_GPIO_Init(outputpin[i].port, &GPIO_Init);
@@ -1611,7 +1618,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "230828";
+    hal.driver_version = "230919";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
