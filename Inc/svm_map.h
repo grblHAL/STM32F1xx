@@ -29,6 +29,11 @@
 
 #define BOARD_NAME "SVM"
 
+#define SERIAL_PORT             1 // GPIOA: TX = 9, RX = 10
+#define SERIAL1_PORT            3 // GPIOB: TX = 10, RX = 11 - Cannot be enabled if I2C port 2 is enabled!
+//#undef MPG_STREAM
+//#define MPG_STREAM 1
+
 #if N_ABC_MOTORS > 3
 #error Axis configuration is not supported!
 #endif

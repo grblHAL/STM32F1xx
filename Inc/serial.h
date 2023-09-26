@@ -27,19 +27,24 @@
 #include "driver.h"
 #include "grbl/stream.h"
 
-#define RX_BUFFER_HWM 900
-#define RX_BUFFER_LWM 300
+//  1 - GPIOA: TX = 9, RX = 10
+//  3 - GPIOB: TX = 10, RX = 11
+// 31 - GPIOC: TX = 10, RX = 11
+//  5 - GPIOC: TX = 12, GPIOD: RX = 2
 
-#if defined(SERIAL_MOD) || defined(SERIAL2_MOD)
-void serialRegisterStreams (void);
-#endif
+#ifdef STM32F103xB
 
-#ifdef SERIAL_MOD
+#ifdef SERIAL_PORT
 const io_stream_t *serialInit (uint32_t baud_rate);
 #endif
 
-#ifdef SERIAL2_MOD
-const io_stream_t *serial2Init (uint32_t baud_rate);
+#ifdef SERIAL1_PORT
+const io_stream_t *serial1Init (uint32_t baud_rate);
 #endif
+
+#else
+void serialRegisterStreams (void);
+#endif
+
 
 /*EOF*/

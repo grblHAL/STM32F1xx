@@ -21,7 +21,7 @@
 
 // NOTE: Only one board may be enabled!
 // If none is enabled pin mappings from generic_map.h will be used.
-#define BOARD_CNC3040
+//#define BOARD_CNC3040
 //#define BOARD_CNC_BOOSTERPACK
 //#define BOARD_MACH3_BOB
 //#define BOARD_BTT_SKR_MINI_E3_V20

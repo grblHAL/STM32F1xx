@@ -70,6 +70,15 @@
 #define timerCLKENA(t) timercken(t)
 #define timercken(t) __HAL_RCC_TIM ## t ## _CLK_ENABLE
 
+#define usart(t) usartN(t)
+#define usartN(t) USART ## t
+#define usartINT(t) usartint(t)
+#define usartint(t) USART ## t ## _IRQn
+#define usartHANDLER(t) usarthandler(t)
+#define usarthandler(t) USART ## t ## _IRQHandler
+#define usartCLKEN(t) usartclken(t)
+#define usartclken(t) __HAL_RCC_USART ## t ## _CLK_ENABLE
+
 // Define GPIO output mode options
 
 #define GPIO_SHIFT0   0
@@ -197,10 +206,8 @@
 #define FLASH_ENABLE 0
 #endif
 
-#if EEPROM_ENABLE || KEYPAD_ENABLE || (TRINAMIC_ENABLE && TRINAMIC_I2C)
-#ifndef I2C_PORT
+#if I2C_ENABLE && !defined(I2C_PORT)
 #define I2C_PORT 2
-#endif
 #endif
 
 #if KEYPAD_ENABLE == 1 && !defined(I2C_STROBE_PORT)

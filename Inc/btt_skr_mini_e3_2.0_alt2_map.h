@@ -34,8 +34,9 @@
 #endif
 #define BOARD_URL "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3"
 
-#define I2C_PORT 1
-#define SERIAL2_MOD
+#define I2C_PORT        1
+#define SERIAL_PORT     1 // GPIOA: TX = 9, RX = 10
+#define SERIAL1_PORT   31 // GPIOC: TX = 10, RX = 11
 #define HAS_BOARD_INIT
 
 #ifdef TRINAMIC_ENABLE
@@ -46,6 +47,7 @@
 #endif
 #define TRINAMIC_ENABLE 2209
 #define TRINAMIC_MIXED_DRIVERS 0
+#define TRINAMIC_STREAM 1
 
 #if EEPROM_ENABLE < 2
 #undef EEPROM_ENABLE

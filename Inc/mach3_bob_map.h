@@ -32,7 +32,7 @@ LED PC2
  1 5v
  2 gnd
  3 PB8  - feed hold
- 4 PB9  - reset
+ 4 PB9  - reset or e-stop
  5 PB6  - start safety door
  6 PB7  - cycle
  7 PB4  - probe
@@ -64,7 +64,7 @@ Programming port, top view (not mounted)
 #define BOARD_NAME "MACH3 USB BOB (BSMCE04U)"
 //#define BOARD_URL ""
 
-#define SERIAL_MOD 5 // Tx: 10pin IDC, 10 - Rx: 10pin IDC, 9
+#define SERIAL_PORT             5 // Tx: 10pin IDC, 10 - Rx: 10pin IDC, 9
 #define HAS_BOARD_INIT
 
 // Define step pulse output pins.
@@ -137,7 +137,7 @@ Programming port, top view (not mounted)
 #define PROBE_PORT              GPIOB
 #define PROBE_PIN               4 // 10pin IDC, 7
 
-#if MPG_ENABLE
+#if MPG_MODE == 1
 #define MPG_MODE_PORT           GPIOB
 #define MPG_MODE_PIN            3 // 10pin IDC, 8
 #else

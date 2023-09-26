@@ -32,6 +32,7 @@
 #else
 #define BOARD_NAME "CNC 3040"
 #endif
+#define BOARD_URL "https://github.com/shaise/GrblCNC/tree/master/Hardware/GrblCnc3040"
 
 // Define step pulse output pins.
 #define STEP_PORT               GPIOA

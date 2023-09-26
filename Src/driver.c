@@ -1692,14 +1692,20 @@ bool driver_init (void)
     hal.periph_port.set_pin_description = setPeriphPinDescription;
 #endif
 
-#if defined(SERIAL_MOD) || defined(SERIAL2_MOD)
-    serialRegisterStreams();
-#endif
-
-#if USB_SERIAL_CDC
+#ifdef STM32F103xB
+  #if USB_SERIAL_CDC
     stream_connect(usbInit());
-#else
+  #else
     stream_connect(serialInit(115200));
+  #endif
+#else
+    serialRegisterStreams();
+  #if USB_SERIAL_CDC
+    stream_connect(usbInit());
+  #else
+    if(!stream_connect_instance(SERIAL_STREAM, BAUD_RATE))
+        while(true); // Cannot boot if no communication channel is available!
+  #endif
 #endif
 
 #if EEPROM_ENABLE

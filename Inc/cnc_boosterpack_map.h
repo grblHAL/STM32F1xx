@@ -41,6 +41,7 @@
 #endif
 
 #define EEPROM_ENABLE   1 // Only change if BoosterPack does not have EEPROM mounted
+#define SERIAL_PORT     1 // GPIOA: TX = 9, RX = 10
 
 // Define step pulse output pins.
 #define STEP_PORT               GPIOA

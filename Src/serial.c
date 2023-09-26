@@ -30,9 +30,31 @@
 
 #include "main.h"
 
-#ifdef SERIAL_MOD
+#ifdef SERIAL_PORT
+static stream_rx_buffer_t rxbuf = {0};
+static stream_tx_buffer_t txbuf = {0};
+static enqueue_realtime_command_ptr enqueue_realtime_command = protocol_enqueue_realtime_command;
+#ifndef STM32F103xB
+static const io_stream_t *serialInit (uint32_t baud_rate);
+#endif
+#else
+#define SERIAL_PORT -1
+#endif
 
-#if SERIAL_MOD == 1
+#ifdef SERIAL1_PORT
+static stream_rx_buffer_t rxbuf1 = {0};
+static stream_tx_buffer_t txbuf1 = {0};
+static enqueue_realtime_command_ptr enqueue_realtime_command1 = protocol_enqueue_realtime_command;
+#ifndef STM32F103xB
+static const io_stream_t *serial1Init(uint32_t baud_rate);
+#endif
+#else
+#define SERIAL1_PORT -1
+#endif
+
+#if SERIAL_PORT >= 0
+
+#if SERIAL_PORT == 1
 #define USART USART1
 #define USART_IRQ USART1_IRQn
 #define USART_IRQHandler USART1_IRQHandler
@@ -46,13 +68,9 @@
 #define USART_CLK_ENABLE __HAL_RCC_UART5_CLK_ENABLE
 #endif
 
-static stream_rx_buffer_t rxbuf = {0};
-static stream_tx_buffer_t txbuf = {0};
-static enqueue_realtime_command_ptr enqueue_realtime_command = protocol_enqueue_realtime_command;
-
 #endif
 
-#ifdef SERIAL2_MOD
+#if SERIAL1_PORT >= 0
 
 #define UART2 USART3
 #define UART2_IRQ USART3_IRQn
@@ -60,14 +78,10 @@ static enqueue_realtime_command_ptr enqueue_realtime_command = protocol_enqueue_
 #define UART2_CLK HAL_RCC_GetPCLK1Freq
 #define UART2_CLK_ENABLE __HAL_RCC_USART3_CLK_ENABLE
 
-static stream_rx_buffer_t rxbuf2 = {0};
-static stream_tx_buffer_t txbuf2 = {0};
-static enqueue_realtime_command_ptr enqueue_realtime_command2 = protocol_enqueue_realtime_command;
-
 #endif
 
 static io_stream_properties_t serial[] = {
-#ifdef SERIAL_MOD
+#if SERIAL_PORT >= 0
     {
       .type = StreamType_Serial,
       .instance = 0,
@@ -79,7 +93,7 @@ static io_stream_properties_t serial[] = {
       .claim = serialInit
     },
 #endif
-#ifdef SERIAL2_MOD
+#if SERIAL1_PORT >= 0
     {
       .type = StreamType_Serial,
       .instance = 1,
@@ -88,7 +102,7 @@ static io_stream_properties_t serial[] = {
       .flags.connected = On,
       .flags.can_set_baud = On,
       .flags.modbus_ready = On,
-      .claim = serial2Init
+      .claim = serial1Init
     }
 #endif
 };
@@ -100,10 +114,129 @@ void serialRegisterStreams (void)
         .streams = serial,
     };
 
+#ifndef STM32F103xB
+
+#if SERIAL_PORT >= 0
+
+ #if SERIAL_PORT == 1
+
+  static const periph_pin_t tx0 = {
+      .function = Output_TX,
+      .group = PinGroup_UART1,
+      .port  = GPIOA,
+      .pin   = 9,
+      .mode  = { .mask = PINMODE_OUTPUT },
+      .description = "UART1"
+  };
+
+  static const periph_pin_t rx0 = {
+      .function = Input_RX,
+      .group = PinGroup_UART1,
+      .port = GPIOA,
+      .pin = 10,
+      .mode = { .mask = PINMODE_NONE },
+      .description = "UART1"
+  };
+
+ #else // UART5
+
+  static const periph_pin_t tx0 = {
+    .function = Output_TX,
+    .group = PinGroup_UART1,
+    .port  = GPIOC,
+    .pin   = 12,
+    .mode  = { .mask = PINMODE_OUTPUT },
+    .description = "UART1"
+  };
+
+  static const periph_pin_t rx0 = {
+    .function = Input_RX,
+    .group = PinGroup_UART1,
+    .port = GPIOD,
+    .pin = 2,
+    .mode = { .mask = PINMODE_NONE },
+    .description = "UART1"
+  };
+
+ #endif
+
+  hal.periph_port.register_pin(&rx0);
+  hal.periph_port.register_pin(&tx0);
+
+#endif
+
+#if SERIAL1_PORT >= 0
+
+ #if SERIAL1_PORT == 31
+
+  static const periph_pin_t tx1 = {
+      .function = Output_TX,
+      .group = PinGroup_UART2,
+      .port  = GPIOC,
+      .pin   = 10,
+      .mode  = { .mask = PINMODE_OUTPUT },
+      .description = "UART2"
+  };
+
+  static const periph_pin_t rx1 = {
+      .function = Input_RX,
+      .group = PinGroup_UART2,
+      .port = GPIOC,
+      .pin = 11,
+      .mode = { .mask = PINMODE_NONE },
+      .description = "UART2"
+  };
+
+ #else
+
+  static const periph_pin_t tx1 = {
+      .function = Output_TX,
+      .group = PinGroup_UART2,
+      .port  = GPIOB,
+      .pin   = 10,
+      .mode  = { .mask = PINMODE_OUTPUT },
+      .description = "UART2"
+  };
+
+  static const periph_pin_t rx1 = {
+      .function = Input_RX,
+      .group = PinGroup_UART2,
+      .port = GPIOB,
+      .pin = 11,
+      .mode = { .mask = PINMODE_NONE },
+      .description = "UART2"
+  };
+
+ #endif
+
+  hal.periph_port.register_pin(&rx1);
+  hal.periph_port.register_pin(&tx1);
+
+#endif
+
+#endif // STM32F103xB
+
     stream_register_streams(&streams);
 }
 
-#ifdef SERIAL_MOD
+static bool serialClaimPort (uint8_t instance)
+{
+    bool ok = false;
+    uint_fast8_t idx = sizeof(serial) / sizeof(io_stream_properties_t);
+
+    do {
+        if(serial[--idx].instance == instance) {
+            if((ok = serial[idx].flags.claimable && !serial[idx].flags.claimed))
+                serial[idx].flags.claimed = On;
+            break;
+        }
+
+    } while(idx);
+
+    return ok;
+}
+
+#if SERIAL_PORT >= 0
 
 //
 // Returns number of free characters in serial input buffer
@@ -259,6 +392,9 @@ static enqueue_realtime_command_ptr serialSetRtHandler (enqueue_realtime_command
     return prev;
 }
 
+#ifndef STM32F103xB
+static
+#endif
 const io_stream_t *serialInit (uint32_t baud_rate)
 {
     static const io_stream_t stream = {
@@ -281,15 +417,19 @@ const io_stream_t *serialInit (uint32_t baud_rate)
         .set_enqueue_rt_handler = serialSetRtHandler
     };
 
+    if(!serialClaimPort(stream.instance))
+        return NULL;
+
     USART_CLK_ENABLE();
 
-    GPIO_InitTypeDef GPIO_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure = {
+        .Mode = GPIO_MODE_AF_PP,
+        .Speed = GPIO_SPEED_FREQ_HIGH
+    };
 
-#if SERIAL_MOD == 1
+#if SERIAL_PORT == 1
 
     GPIO_InitStructure.Pin = GPIO_PIN_9;
-    GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 
     GPIO_InitStructure.Pin = GPIO_PIN_10;
@@ -297,67 +437,15 @@ const io_stream_t *serialInit (uint32_t baud_rate)
     GPIO_InitStructure.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 
-  #ifndef STM32F103xB
-
-    static const periph_pin_t tx = {
-        .function = Output_TX,
-        .group = PinGroup_UART1,
-        .port  = GPIOA,
-        .pin   = 9,
-        .mode  = { .mask = PINMODE_OUTPUT },
-        .description = "UART1"
-    };
-
-    static const periph_pin_t rx = {
-        .function = Input_RX,
-        .group = PinGroup_UART1,
-        .port = GPIOA,
-        .pin = 10,
-        .mode = { .mask = PINMODE_NONE },
-        .description = "UART1"
-    };
-
-    hal.periph_port.register_pin(&rx);
-    hal.periph_port.register_pin(&tx);
-
-  #endif
-
 #else // UART5
 
     GPIO_InitStructure.Pin = GPIO_PIN_12;
-    GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     GPIO_InitStructure.Pin = GPIO_PIN_2;
     GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
     GPIO_InitStructure.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStructure);
-
-  #ifndef STM32F103xB
-
-    static const periph_pin_t tx = {
-      .function = Output_TX,
-      .group = PinGroup_UART1,
-      .port  = GPIOC,
-      .pin   = 12,
-      .mode  = { .mask = PINMODE_OUTPUT },
-      .description = "UART1"
-    };
-
-    static const periph_pin_t rx = {
-      .function = Input_RX,
-      .group = PinGroup_UART1,
-      .port = GPIOD,
-      .pin = 2,
-      .mode = { .mask = PINMODE_NONE },
-      .description = "UART1"
-    };
-
-    hal.periph_port.register_pin(&rx);
-    hal.periph_port.register_pin(&tx);
-
-  #endif
 
 #endif
 
@@ -386,23 +474,23 @@ void USART_IRQHandler (void)
 
     if((USART->SR & USART_SR_TXE) && (USART->CR1 & USART_CR1_TXEIE)) {
         uint_fast16_t tail = txbuf.tail;            // Get buffer pointer
-        USART->DR = txbuf.data[tail];              // Send next character
+        USART->DR = txbuf.data[tail];               // Send next character
         txbuf.tail = tail = BUFNEXT(tail, txbuf);   // and increment pointer
         if(tail == txbuf.head)                      // If buffer empty then
-            USART->CR1 &= ~USART_CR1_TXEIE;        // disable UART TX interrupt
+            USART->CR1 &= ~USART_CR1_TXEIE;         // disable UART TX interrupt
    }
 }
 
-#endif // SERIAL_MOD
+#endif // SERIAL_PORT
 
-#ifdef SERIAL2_MOD
+#if SERIAL1_PORT >= 0
 
 //
-// Returns number of free characters in serial2 input buffer
+// Returns number of free characters in serial1 input buffer
 //
-static uint16_t serial2RxFree (void)
+static uint16_t serial1RxFree (void)
 {
-    uint16_t tail = rxbuf2.tail, head = rxbuf2.head;
+    uint16_t tail = rxbuf1.tail, head = rxbuf1.head;
 
     return RX_BUFFER_SIZE - BUFCOUNT(head, tail, RX_BUFFER_SIZE);
 }
@@ -410,35 +498,35 @@ static uint16_t serial2RxFree (void)
 //
 // Returns number of characters in serial input buffer
 //
-static uint16_t serial2RxCount (void)
+static uint16_t serial1RxCount (void)
 {
-    uint32_t tail = rxbuf2.tail, head = rxbuf2.head;
+    uint32_t tail = rxbuf1.tail, head = rxbuf1.head;
 
     return BUFCOUNT(head, tail, RX_BUFFER_SIZE);
 }
 
 //
-// Flushes the serial2 input buffer
+// Flushes the serial1 input buffer
 //
-static void serial2RxFlush (void)
+static void serial1RxFlush (void)
 {
-    rxbuf2.tail = rxbuf2.head;
+    rxbuf1.tail = rxbuf1.head;
 }
 
 //
-// Flushes and adds a CAN character to the serial2 input buffer
+// Flushes and adds a CAN character to the serial1 input buffer
 //
-static void serial2RxCancel (void)
+static void serial1RxCancel (void)
 {
-    rxbuf2.data[rxbuf2.head] = ASCII_CAN;
-    rxbuf2.tail = rxbuf2.head;
-    rxbuf2.head = BUFNEXT(rxbuf2.head, rxbuf2);
+    rxbuf1.data[rxbuf1.head] = ASCII_CAN;
+    rxbuf1.tail = rxbuf1.head;
+    rxbuf1.head = BUFNEXT(rxbuf1.head, rxbuf1);
 }
 
 //
 // Attempt to send a character bypassing buffering
 //
-inline static bool serial2PutCNonBlocking (const char c)
+inline static bool serial1PutCNonBlocking (const char c)
 {
     bool ok;
 
@@ -449,21 +537,21 @@ inline static bool serial2PutCNonBlocking (const char c)
 }
 
 //
-// Writes a character to the serial2 output stream
+// Writes a character to the serial1 output stream
 //
-static bool serial2PutC (const char c)
+static bool serial1PutC (const char c)
 {
-//    if(txbuf2.head != txbuf2.tail || !serialPutCNonBlocking(c)) {           // Try to send character without buffering...
+//    if(txbuf1.head != txbuf1.tail || !serialPutCNonBlocking(c)) {           // Try to send character without buffering...
 
-        uint16_t next_head = BUFNEXT(txbuf2.head, txbuf2);    // .. if not, get pointer to next free slot in buffer
+        uint16_t next_head = BUFNEXT(txbuf1.head, txbuf1);    // .. if not, get pointer to next free slot in buffer
 
-        while(txbuf2.tail == next_head) {                    // While TX buffer full
+        while(txbuf1.tail == next_head) {                    // While TX buffer full
             if(!hal.stream_blocking_callback())             // check if blocking for space,
                 return false;                               // exit if not (leaves TX buffer in an inconsistent state)
         }
 
-        txbuf2.data[txbuf2.head] = c;                         // Add data to buffer,
-        txbuf2.head = next_head;                             // update head pointer and
+        txbuf1.data[txbuf1.head] = c;                         // Add data to buffer,
+        txbuf1.head = next_head;                             // update head pointer and
         UART2->CR1 |= USART_CR1_TXEIE;                      // enable TX interrupts
 //    }
 
@@ -471,69 +559,69 @@ static bool serial2PutC (const char c)
 }
 
 //
-// Writes a null terminated string to the serial2 output stream, blocks if buffer full
+// Writes a null terminated string to the serial1 output stream, blocks if buffer full
 //
-static void serial2WriteS (const char *s)
+static void serial1WriteS (const char *s)
 {
     char c, *ptr = (char *)s;
 
     while((c = *ptr++) != '\0')
-        serial2PutC(c);
+        serial1PutC(c);
 }
 
 //
-// Writes a number of characters from string to the serial2 output stream followed by EOL, blocks if buffer full
+// Writes a number of characters from string to the serial1 output stream followed by EOL, blocks if buffer full
 //
 
-static void serial2Write(const char *s, uint16_t length)
+static void serial1Write(const char *s, uint16_t length)
 {
     char *ptr = (char *)s;
 
     while(length--)
-        serial2PutC(*ptr++);
+        serial1PutC(*ptr++);
 }
 
 //
 // Flushes the serial output buffer
 //
-static void serial2TxFlush (void)
+static void serial1TxFlush (void)
 {
     UART2->CR1 &= ~USART_CR1_TXEIE;     // Disable TX interrupts
-    txbuf2.tail = txbuf2.head;
+    txbuf1.tail = txbuf1.head;
 }
 
 //
 // Returns number of characters pending transmission
 //
-static uint16_t serial2TxCount (void)
+static uint16_t serial1TxCount (void)
 {
-    uint32_t tail = txbuf2.tail, head = txbuf2.head;
+    uint32_t tail = txbuf1.tail, head = txbuf1.head;
 
     return BUFCOUNT(head, tail, TX_BUFFER_SIZE) + (UART2->SR & USART_SR_TC ? 0 : 1);
 }
 
 //
-// serial2GetC - returns -1 if no data available
+// serial1GetC - returns -1 if no data available
 //
-static int16_t serial2GetC (void)
+static int16_t serial1GetC (void)
 {
-    uint_fast16_t tail = rxbuf2.tail;    // Get buffer pointer
+    uint_fast16_t tail = rxbuf1.tail;    // Get buffer pointer
 
-    if(tail == rxbuf2.head)
+    if(tail == rxbuf1.head)
         return -1; // no data available
 
-    char data = rxbuf2.data[tail];       // Get next character
-    rxbuf2.tail = BUFNEXT(tail, rxbuf2);  // and update pointer
+    char data = rxbuf1.data[tail];       // Get next character
+    rxbuf1.tail = BUFNEXT(tail, rxbuf1);  // and update pointer
 
     return (int16_t)data;
 }
 
-static bool serial2SuspendInput (bool suspend)
+static bool serial1SuspendInput (bool suspend)
 {
-    return stream_rx_suspend(&rxbuf2, suspend);
+    return stream_rx_suspend(&rxbuf1, suspend);
 }
 
-static bool serial2SetBaudRate (uint32_t baud_rate)
+static bool serial1SetBaudRate (uint32_t baud_rate)
 {
     UART2->CR1 = USART_CR1_RE|USART_CR1_TE;
     UART2->BRR = UART_BRR_SAMPLING16(UART2_CLK(), baud_rate);
@@ -542,7 +630,7 @@ static bool serial2SetBaudRate (uint32_t baud_rate)
     return true;
 }
 
-static bool serial2Disable (bool disable)
+static bool serial1Disable (bool disable)
 {
     if(disable)
         UART2->CR1 &= ~USART_CR1_RXNEIE;
@@ -552,85 +640,72 @@ static bool serial2Disable (bool disable)
     return true;
 }
 
-static bool serial2EnqueueRtCommand (char c)
+static bool serial1EnqueueRtCommand (char c)
 {
-    return enqueue_realtime_command2(c);
+    return enqueue_realtime_command1(c);
 }
 
-static enqueue_realtime_command_ptr serial2SetRtHandler (enqueue_realtime_command_ptr handler)
+static enqueue_realtime_command_ptr serial1SetRtHandler (enqueue_realtime_command_ptr handler)
 {
-    enqueue_realtime_command_ptr prev = enqueue_realtime_command2;
+    enqueue_realtime_command_ptr prev = enqueue_realtime_command1;
 
     if(handler)
-        enqueue_realtime_command2 = handler;
+        enqueue_realtime_command1 = handler;
 
     return prev;
 }
 
-const io_stream_t *serial2Init (uint32_t baud_rate)
+#ifndef STM32F103xB
+static
+#endif
+const io_stream_t *serial1Init (uint32_t baud_rate)
 {
     static const io_stream_t stream = {
         .type = StreamType_Serial,
+        .instance = 1,
         .state.connected = On,
-        .read = serial2GetC,
-        .write = serial2WriteS,
-        .write_n =  serial2Write,
-        .write_char = serial2PutC,
-        .enqueue_rt_command = serial2EnqueueRtCommand,
-        .get_rx_buffer_free = serial2RxFree,
-        .get_rx_buffer_count = serial2RxCount,
-        .get_tx_buffer_count = serial2TxCount,
-        .reset_write_buffer = serial2TxFlush,
-        .reset_read_buffer = serial2RxFlush,
-        .cancel_read_buffer = serial2RxCancel,
-        .suspend_read = serial2SuspendInput,
-        .disable_rx = serial2Disable,
-        .set_baud_rate = serial2SetBaudRate,
-        .set_enqueue_rt_handler = serial2SetRtHandler
+        .read = serial1GetC,
+        .write = serial1WriteS,
+        .write_n =  serial1Write,
+        .write_char = serial1PutC,
+        .enqueue_rt_command = serial1EnqueueRtCommand,
+        .get_rx_buffer_free = serial1RxFree,
+        .get_rx_buffer_count = serial1RxCount,
+        .get_tx_buffer_count = serial1TxCount,
+        .reset_write_buffer = serial1TxFlush,
+        .reset_read_buffer = serial1RxFlush,
+        .cancel_read_buffer = serial1RxCancel,
+        .suspend_read = serial1SuspendInput,
+        .disable_rx = serial1Disable,
+        .set_baud_rate = serial1SetBaudRate,
+        .set_enqueue_rt_handler = serial1SetRtHandler
     };
 
-    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    if(!serialClaimPort(stream.instance))
+        return NULL;
+
+    GPIO_InitTypeDef GPIO_InitStructure = {
+        .Mode = GPIO_MODE_AF_PP,
+        .Speed = GPIO_SPEED_FREQ_HIGH
+    };
 
     UART2_CLK_ENABLE();
 
     GPIO_InitStructure.Pin = GPIO_PIN_10;
-    GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 
     GPIO_InitStructure.Pin = GPIO_PIN_11;
     GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
     GPIO_InitStructure.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 
+#if SERIAL1_PORT == 31
     __HAL_AFIO_REMAP_USART3_PARTIAL();
-
-#ifndef STM32F103xB
-
-    static const periph_pin_t tx = {
-        .function = Output_TX,
-        .group = PinGroup_UART2,
-        .port  = GPIOC,
-        .pin   = 10,
-        .mode  = { .mask = PINMODE_OUTPUT },
-        .description = "UART2"
-    };
-
-    static const periph_pin_t rx = {
-        .function = Input_RX,
-        .group = PinGroup_UART2,
-        .port = GPIOC,
-        .pin = 11,
-        .mode = { .mask = PINMODE_NONE },
-        .description = "UART2"
-    };
-
-    hal.periph_port.register_pin(&rx);
-    hal.periph_port.register_pin(&tx);
-
+#else
+    __HAL_AFIO_REMAP_USART3_DISABLE();
 #endif
 
-    serial2SetBaudRate(115200);
+    serial1SetBaudRate(115200);
 
     HAL_NVIC_SetPriority(UART2_IRQ, 0, 0);
     HAL_NVIC_EnableIRQ(UART2_IRQ);
@@ -642,24 +717,24 @@ void UART2_IRQHandler (void)
 {
     if(UART2->SR & USART_SR_RXNE) {
         char data = UART2->DR;
-        if(!enqueue_realtime_command2(data)) {                   // Check and strip realtime commands...
-            uint16_t next_head = BUFNEXT(rxbuf2.head, rxbuf2);   // Get and increment buffer pointer
-            if(next_head == rxbuf2.tail)                         // If buffer full
-                rxbuf2.overflow = 1;                             // flag overflow
+        if(!enqueue_realtime_command1(data)) {                   // Check and strip realtime commands...
+            uint16_t next_head = BUFNEXT(rxbuf1.head, rxbuf1);   // Get and increment buffer pointer
+            if(next_head == rxbuf1.tail)                         // If buffer full
+                rxbuf1.overflow = 1;                             // flag overflow
             else {
-                rxbuf2.data[rxbuf2.head] = data;                 // if not add data to buffer
-                rxbuf2.head = next_head;                         // and update pointer
+                rxbuf1.data[rxbuf1.head] = data;                 // if not add data to buffer
+                rxbuf1.head = next_head;                         // and update pointer
             }
         }
     }
 
     if((UART2->SR & USART_SR_TXE) && (UART2->CR1 & USART_CR1_TXEIE)) {
-        uint_fast16_t tail = txbuf2.tail;           // Get buffer pointer
-        UART2->DR = txbuf2.data[tail];              // Send next character
-        txbuf2.tail = tail = BUFNEXT(tail, txbuf2); // and increment pointer
-        if(tail == txbuf2.head)                     // If buffer empty then
+        uint_fast16_t tail = txbuf1.tail;           // Get buffer pointer
+        UART2->DR = txbuf1.data[tail];              // Send next character
+        txbuf1.tail = tail = BUFNEXT(tail, txbuf1); // and increment pointer
+        if(tail == txbuf1.head)                     // If buffer empty then
             UART2->CR1 &= ~USART_CR1_TXEIE;         // disable UART TX interrupt
    }
 }
 
-#endif // SERIAL2_MOD
+#endif // SERIAL2_PORT

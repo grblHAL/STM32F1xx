@@ -88,11 +88,14 @@ void board_init (void)
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_14, GPIO_PIN_RESET);
 #endif
 
-#ifdef SERIAL2_MOD
-    memcpy(&tmc_uart, serial2Init(115200), sizeof(io_stream_t));
-#else
-    memcpy(&tmc_uart, serialInit(115200), sizeof(io_stream_t));
-#endif
+    io_stream_t const *stream;
+
+    if((stream = stream_open_instance(TRINAMIC_STREAM, 115200, NULL)) == NULL) {
+        stream = stream_null_init(115200);
+    }
+
+    memcpy(&tmc_uart, stream, sizeof(io_stream_t));
+    tmc_uart.disable_rx(true);
     tmc_uart.set_enqueue_rt_handler(stream_buffer_all);
 }
 
