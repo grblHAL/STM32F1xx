@@ -38,7 +38,7 @@ static enqueue_realtime_command_ptr enqueue_realtime_command = protocol_enqueue_
 static const io_stream_t *serialInit (uint32_t baud_rate);
 #endif
 #else
-#define SERIAL_PORT -1
+#define SERIAL_PORT 0
 #endif
 
 #ifdef SERIAL1_PORT
@@ -49,10 +49,10 @@ static enqueue_realtime_command_ptr enqueue_realtime_command1 = protocol_enqueue
 static const io_stream_t *serial1Init(uint32_t baud_rate);
 #endif
 #else
-#define SERIAL1_PORT -1
+#define SERIAL1_PORT 0
 #endif
 
-#if SERIAL_PORT >= 0
+#if SERIAL_PORT
 
 #if SERIAL_PORT == 1
 #define USART USART1
@@ -70,7 +70,7 @@ static const io_stream_t *serial1Init(uint32_t baud_rate);
 
 #endif
 
-#if SERIAL1_PORT >= 0
+#if SERIAL1_PORT
 
 #define UART2 USART3
 #define UART2_IRQ USART3_IRQn
@@ -81,7 +81,7 @@ static const io_stream_t *serial1Init(uint32_t baud_rate);
 #endif
 
 static io_stream_properties_t serial[] = {
-#if SERIAL_PORT >= 0
+#if SERIAL_PORT
     {
       .type = StreamType_Serial,
       .instance = 0,
@@ -93,7 +93,7 @@ static io_stream_properties_t serial[] = {
       .claim = serialInit
     },
 #endif
-#if SERIAL1_PORT >= 0
+#if SERIAL1_PORT
     {
       .type = StreamType_Serial,
       .instance = 1,
@@ -116,7 +116,7 @@ void serialRegisterStreams (void)
 
 #ifndef STM32F103xB
 
-#if SERIAL_PORT >= 0
+#if SERIAL_PORT
 
  #if SERIAL_PORT == 1
 
@@ -165,7 +165,7 @@ void serialRegisterStreams (void)
 
 #endif
 
-#if SERIAL1_PORT >= 0
+#if SERIAL1_PORT
 
  #if SERIAL1_PORT == 31
 
@@ -219,6 +219,8 @@ void serialRegisterStreams (void)
     stream_register_streams(&streams);
 }
 
+#if SERIAL_PORT || SERIAL1_PORT
+
 static bool serialClaimPort (uint8_t instance)
 {
     bool ok = false;
@@ -236,7 +238,9 @@ static bool serialClaimPort (uint8_t instance)
     return ok;
 }
 
-#if SERIAL_PORT >= 0
+#endif
+
+#if SERIAL_PORT
 
 //
 // Returns number of free characters in serial input buffer
@@ -483,7 +487,7 @@ void USART_IRQHandler (void)
 
 #endif // SERIAL_PORT
 
-#if SERIAL1_PORT >= 0
+#if SERIAL1_PORT
 
 //
 // Returns number of free characters in serial1 input buffer
