@@ -38,6 +38,7 @@
       "MAP": "Inc/cnc3040_map.h",
       "caps": {
         "uart": 0,
+        "serial_ports": 0,
         "axes": 5,
         "auto_square": 0,
         "digital_in": 4,
