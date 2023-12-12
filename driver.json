@@ -4,6 +4,8 @@
     "axes": 6,
     "usb_cdc": 1,
     "uart": 1,
+    "spindle_pwm": 1,
+    "spindle_dir": 1,
     "serial_ports": 2,
     "eeprom": 1,
     "ganged_axes": 1,
@@ -52,6 +54,7 @@
       "symbols": {
           "STM32F103xB": "",
           "RX_BUFFER_SIZE": 512,
+          "DEFAULT_PLANNER_BUFFER_BLOCKS": 35,
           "NO_SETTINGS_DESCRIPTIONS": ""
       }
     },
@@ -112,6 +115,7 @@
       "MAP": "Inc/mach3_bob_map.h",
       "caps": {
         "axes": 4,
+        "spindle_dir": 0,
         "auto_square": 1,
         "digital_in": 0,
         "digital_out": 1,

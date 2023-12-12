@@ -42,6 +42,7 @@
 									<listOptionValue builtIn="false" value="RX_BUFFER_SIZE=512"/>
 									<listOptionValue builtIn="false" value="NVS_SIZE=1536"/>
 									<listOptionValue builtIn="false" value="NO_SETTINGS_DESCRIPTIONS"/>
+									<listOptionValue builtIn="false" value="DEFAULT_PLANNER_BUFFER_BLOCKS=35"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.2063154067" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Inc"/>
@@ -146,6 +147,7 @@
 									<listOptionValue builtIn="false" value="RX_BUFFER_SIZE=512"/>
 									<listOptionValue builtIn="false" value="NVS_SIZE=1536"/>
 									<listOptionValue builtIn="false" value="NO_SETTINGS_DESCRIPTIONS"/>
+									<listOptionValue builtIn="false" value="DEFAULT_PLANNER_BUFFER_BLOCKS=35"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.278789419" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Inc"/>

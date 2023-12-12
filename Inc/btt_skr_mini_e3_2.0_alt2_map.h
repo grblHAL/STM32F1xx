@@ -100,15 +100,31 @@
 #endif
 #endif
 
-  // Define spindle enable and spindle direction output pins.
-#define SPINDLE_ENABLE_PORT     GPIOC
-#define SPINDLE_ENABLE_PIN      7 //PC7-FAN1
-#define SPINDLE_DIRECTION_PORT  GPIOC
-#define SPINDLE_DIRECTION_PIN   8 //PC8
+// Define driver spindle pins
 
-// Define spindle PWM output pin.
+#if DRIVER_SPINDLE_PWM_ENABLE // PA1 or PA8
 #define SPINDLE_PWM_PORT_BASE   GPIOA_BASE
-#define SPINDLE_PWM_PIN         1 //PA1 or PA8
+#define SPINDLE_PWM_PIN         1
+#else
+#define AUXOUTPUT0_PORT         GPIOA
+#define AUXOUTPUT0_PIN          1
+#endif
+
+#if DRIVER_SPINDLE_DIR_ENABLE
+#define SPINDLE_DIRECTION_PORT  GPIOC
+#define SPINDLE_DIRECTION_PIN   8
+#else
+#define AUXOUTPUT1_PORT         GPIOC
+#define AUXOUTPUT1_PIN          8
+#endif
+
+#if DRIVER_SPINDLE_ENABLE // FAN1
+#define SPINDLE_ENABLE_PORT     GPIOC
+#define SPINDLE_ENABLE_PIN      7
+#else
+#define AUXOUTPUT2_PORT         GPIOC
+#define AUXOUTPUT2_PIN          7
+#endif
 
 // Define flood and mist coolant enable output pins.
 #define COOLANT_FLOOD_PORT      GPIOC

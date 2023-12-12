@@ -112,6 +112,8 @@
   #include "my_machine_map.h"
 #elif defined(BOARD_SVM)
   #include "svm_map.h"
+#elif defined(BOARD_SUPERGERBIL)
+  #include "supergerbil_map.h"
 #else // default board
   #include "generic_map.h"
 #endif
@@ -151,6 +153,11 @@
     #define SPINDLE_PWM_TIMER_CH    2
     #define SPINDLE_PWM_TIMER_INV   1
     #define SPINDLE_PWM_AF_REMAP    0b01
+  #elif SPINDLE_PWM_PIN == 9 // PB9 - TIM4_CH4
+    #define SPINDLE_PWM_TIMER_N     1
+    #define SPINDLE_PWM_TIMER_CH    4
+    #define SPINDLE_PWM_TIMER_INV   0
+    #define SPINDLE_PWM_AF_REMAP    0
   #endif
 #endif
 
