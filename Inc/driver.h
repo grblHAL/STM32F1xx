@@ -118,19 +118,21 @@
   #include "generic_map.h"
 #endif
 
-// Define timer allocations.
-#define STEPPER_TIMER TIM2
-#define PULSE_TIMER TIM3
-#define DEBOUNCE_TIMER TIM4
-
 #ifdef SPINDLE_PWM_PORT_BASE
 
 #if SPINDLE_PWM_PORT_BASE == GPIOA_BASE
-  #if SPINDLE_PWM_PIN == 1 // PA1 - TIM5_CH2
+  #if SPINDLE_PWM_PIN == 1
+   #ifdef STM32F103xE // PA1 - TIM5_CH2
     #define SPINDLE_PWM_TIMER_N     5
     #define SPINDLE_PWM_TIMER_CH    2
     #define SPINDLE_PWM_TIMER_INV   0
     #define SPINDLE_PWM_AF_REMAP    0
+   #else // PA1 - TIM2_CH2
+    #define SPINDLE_PWM_TIMER_N 2
+    #define SPINDLE_PWM_TIMER_CH 2
+    #define SPINDLE_PWM_TIMER_INV 0
+    #define SPINDLE_PWM_AF_REMAP 0
+   #endif
   #elif SPINDLE_PWM_PIN == 8 // PA8 - TIM1_CH1
     #define SPINDLE_PWM_TIMER_N     1
     #define SPINDLE_PWM_TIMER_CH    1
@@ -141,11 +143,6 @@
     #define SPINDLE_PWM_TIMER_CH    3
     #define SPINDLE_PWM_TIMER_INV   0
     #define SPINDLE_PWM_AF_REMAP    0
-  #elif SPINDLE_PWM_PIN == 1 // PA1 - TIM2_CH2
-    #define SPINDLE_PWM_TIMER_N 2
-    #define SPINDLE_PWM_TIMER_CH 2
-    #define SPINDLE_PWM_TIMER_INV 0
-    #define SPINDLE_PWM_AF_REMAP 0
   #endif
 #elif SPINDLE_PWM_PORT_BASE == GPIOB_BASE
   #if SPINDLE_PWM_PIN == 0 // PB0 - TIM1_CH2N
@@ -189,6 +186,32 @@
 #define SPINDLE_PWM_CLOCK_ENA       timerCLKENA(SPINDLE_PWM_TIMER_N)
 
 #endif // SPINDLE_PWM_PORT_BASE
+
+#if SPINDLE_PWM_TIMER_CH == 4
+#define DEBOUNCE_TIMER_N 1
+#else
+#define DEBOUNCE_TIMER_N 4
+#endif
+#define DEBOUNCE_TIMER              timer(DEBOUNCE_TIMER_N)
+#define DEBOUNCE_TIMER_CLKEN        timerCLKENA(DEBOUNCE_TIMER_N)
+#define DEBOUNCE_TIMER_IRQn         timerINT(DEBOUNCE_TIMER_N)
+#define DEBOUNCE_TIMER_IRQHandler   timerHANDLER(DEBOUNCE_TIMER_N)
+
+#if SPINDLE_PWM_TIMER_CH == 2
+#define STEPPER_TIMER_N 1
+#else
+#define STEPPER_TIMER_N 2
+#endif
+#define STEPPER_TIMER               timer(STEPPER_TIMER_N)
+#define STEPPER_TIMER_CLKEN         timerCLKENA(STEPPER_TIMER_N)
+#define STEPPER_TIMER_IRQn          timerINT(STEPPER_TIMER_N)
+#define STEPPER_TIMER_IRQHandler    timerHANDLER(STEPPER_TIMER_N)
+
+#define PULSE_TIMER_N               3
+#define PULSE_TIMER                 timer(PULSE_TIMER_N)
+#define PULSE_TIMER_CLKEN           timerCLKENA(PULSE_TIMER_N)
+#define PULSE_TIMER_IRQn            timerINT(PULSE_TIMER_N)
+#define PULSE_TIMER_IRQHandler      timerHANDLER(PULSE_TIMER_N)
 
 // Adjust STEP_PULSE_LATENCY to get accurate step pulse length when required, e.g if using high step rates.
 // The default value is calibrated for 10 microseconds length.

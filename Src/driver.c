@@ -1478,9 +1478,9 @@ static bool driver_setup (settings_t *settings)
 {
   //    Interrupt_disableSleepOnIsrExit();
 
-    __HAL_RCC_TIM2_CLK_ENABLE();
-    __HAL_RCC_TIM3_CLK_ENABLE();
-    __HAL_RCC_TIM4_CLK_ENABLE();
+    PULSE_TIMER_CLKEN();
+    STEPPER_TIMER_CLKEN();
+    DEBOUNCE_TIMER_CLKEN();
 
     GPIO_InitTypeDef GPIO_Init = {
         .Speed = GPIO_SPEED_FREQ_HIGH,
@@ -1512,6 +1512,9 @@ static bool driver_setup (settings_t *settings)
     STEPPER_TIMER->CNT = 0;
     STEPPER_TIMER->DIER |= TIM_DIER_UIE;
 
+    NVIC_SetPriority(STEPPER_TIMER_IRQn, 1);
+    NVIC_EnableIRQ(STEPPER_TIMER_IRQn);
+
     // Single-shot 0.1 us per tick
     PULSE_TIMER->CR1 |= TIM_CR1_OPM|TIM_CR1_DIR|TIM_CR1_CKD_1|TIM_CR1_ARPE|TIM_CR1_URS;
     PULSE_TIMER->PSC = hal.f_step_timer / 10000000UL - 1;
@@ -1519,12 +1522,8 @@ static bool driver_setup (settings_t *settings)
     PULSE_TIMER->CNT = 0;
     PULSE_TIMER->DIER |= TIM_DIER_UIE;
 
-    //
-
-    NVIC_SetPriority(TIM3_IRQn, 0);
-    NVIC_SetPriority(TIM2_IRQn, 1);
-    NVIC_EnableIRQ(TIM3_IRQn);
-    NVIC_EnableIRQ(TIM2_IRQn);
+    NVIC_SetPriority(PULSE_TIMER_IRQn, 0);
+    NVIC_EnableIRQ(PULSE_TIMER_IRQn);
 
  // Limit pins init
 
@@ -1541,7 +1540,7 @@ static bool driver_setup (settings_t *settings)
         DEBOUNCE_TIMER->ARR = 400; // 40 ms timeout
         DEBOUNCE_TIMER->DIER |= TIM_DIER_UIE;
 
-        HAL_NVIC_EnableIRQ(TIM4_IRQn); // Enable debounce interrupt
+        HAL_NVIC_EnableIRQ(DEBOUNCE_TIMER_IRQn); // Enable debounce interrupt
     }
 
  // Spindle init
@@ -1635,7 +1634,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "231209";
+    hal.driver_version = "231217";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -1854,7 +1853,7 @@ bool driver_init (void)
 /* interrupt handlers */
 
 // Main stepper driver
-void TIM2_IRQHandler(void)
+void STEPPER_TIMER_IRQHandler (void)
 {
     if ((STEPPER_TIMER->SR & TIM_SR_UIF) != 0)                  // check interrupt source
     {
@@ -1881,7 +1880,7 @@ void TIM2_IRQHandler(void)
 // This interrupt is enabled when Grbl sets the motor port bits to execute
 // a step. This ISR resets the motor port after a short period (settings.pulse_microseconds)
 // completing one step cycle.
-void TIM3_IRQHandler(void)
+void PULSE_TIMER_IRQHandler (void)
 {
     PULSE_TIMER->SR &= ~TIM_SR_UIF;                 // Clear UIF flag
 
@@ -1906,7 +1905,7 @@ static inline bool debounce_start (void)
 }
 
 // Debounce timer interrupt handler
-void TIM4_IRQHandler (void)
+void DEBOUNCE_TIMER_IRQHandler (void)
 {
     DEBOUNCE_TIMER->SR = ~TIM_SR_UIF; // clear UIF flag;
 
@@ -1924,7 +1923,6 @@ void TIM4_IRQHandler (void)
             hal.control.interrupt_callback(state);
     }
 }
-
 
 #if (DRIVER_IRQMASK|PROBE_IRQ_BIT|AUXINPUT_MASK) & (1<<0)
 
