@@ -3,7 +3,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2020 Terje Io
+  Copyright (c) 2020-2023 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -96,10 +96,20 @@
 #define RESET_PIN               5
 #define FEED_HOLD_PIN           6
 #define CYCLE_START_PIN         7
-#ifdef ENABLE_SAFETY_DOOR_INPUT_PIN
-#define SAFETY_DOOR_PIN         8
-#endif
 #define CONTROL_INMODE          GPIO_SHIFT5
+
+#define AUXINPUT0_PORT          GPIOB
+#define AUXINPUT0_PIN           8
+
+#if SAFETY_DOOR_ENABLE
+#define SAFETY_DOOR_PORT        AUXINPUT0_PORT
+#define SAFETY_DOOR_PIN         AUXINPUT0_PIN
+#endif
+
+#if MOTOR_FAULT_ENABLE
+#define MOTOR_FAULT_PORT        AUXINPUT0_PORT
+#define MOTOR_FAULT_PIN         AUXINPUT0_PIN
+#endif
 
 // Define probe switch input pin.
 #define PROBE_PORT              GPIOA

@@ -128,10 +128,20 @@ Programming port, top view (not mounted)
 #define RESET_PIN               9 // 10pin IDC, 4
 #define FEED_HOLD_PIN           8 // 10pin IDC, 3
 #define CYCLE_START_PIN         7 // 10pin IDC, 6
-#ifdef ENABLE_SAFETY_DOOR_INPUT_PIN
-#define SAFETY_DOOR_PIN         6 // 10pin IDC, 5
-#endif
 #define CONTROL_INMODE          GPIO_BITBAND
+
+#define AUXINPUT0_PORT          GPIOB
+#define AUXINPUT0_PIN           6 // 10pin IDC, 5
+
+#if SAFETY_DOOR_ENABLE
+#define SAFETY_DOOR_PORT        AUXINPUT0_PORT
+#define SAFETY_DOOR_PIN         AUXINPUT0_PIN
+#endif
+
+#if MOTOR_FAULT_ENABLE
+#define MOTOR_FAULT_PORT        AUXINPUT0_PORT
+#define MOTOR_FAULT_PIN         AUXINPUT0_PIN
+#endif
 
 // Define probe switch input pin.
 #define PROBE_PORT              GPIOB
@@ -141,7 +151,6 @@ Programming port, top view (not mounted)
 #define MPG_MODE_PORT           GPIOB
 #define MPG_MODE_PIN            3 // 10pin IDC, 8
 #else
-#define HAS_IOPORTS
 #define AUXOUTPUT0_PORT         GPIOB
 #define AUXOUTPUT0_PIN          3 // 10pin IDC, 8
 #endif

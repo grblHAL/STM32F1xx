@@ -133,10 +133,20 @@
 #define RESET_PIN               7
 #define FEED_HOLD_PIN           6
 #define CYCLE_START_PIN         5
-#if SAFETY_DOOR_ENABLE
-#define SAFETY_DOOR_PIN         4
-#endif
 #define CONTROL_INMODE          GPIO_MAP
+
+#define AUXINPUT0_PORT          GPIOC
+#define AUXINPUT0_PIN           4
+
+#if SAFETY_DOOR_ENABLE
+#define SAFETY_DOOR_PORT        AUXINPUT0_PORT
+#define SAFETY_DOOR_PIN         AUXINPUT0_PIN
+#endif
+
+#if MOTOR_FAULT_ENABLE
+#define MOTOR_FAULT_PORT        AUXINPUT0_PORT
+#define MOTOR_FAULT_PIN         AUXINPUT0_PIN
+#endif
 
 // Define probe switch input pin.
 #define PROBE_PORT              GPIOC

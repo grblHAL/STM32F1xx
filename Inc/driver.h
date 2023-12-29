@@ -98,6 +98,10 @@
 #define GPIO_MAP     14
 #define GPIO_BITBAND 15
 
+#ifndef STM32F103xB
+#define HAS_IOPORTS
+#endif
+
 #ifdef BOARD_CNC_BOOSTERPACK
   #include "cnc_boosterpack_map.h"
 #elif defined(BOARD_CNC3040)

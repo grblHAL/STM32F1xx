@@ -33,23 +33,34 @@
 // Uncomment to enable.
 
 #ifndef USB_SERIAL_CDC
-#define USB_SERIAL_CDC       1 // Serial communication via native USB. Comment out for UART communication.
+#define USB_SERIAL_CDC            1 // Serial communication via native USB. Comment out for UART communication.
 #endif
-//#define SAFETY_DOOR_ENABLE 1 // Enable safety door input.
-//#define SDCARD_ENABLE      1 // Run gcode programs from SD card, requires sdcard plugin.
-//#define MPG_ENABLE         1 // Enable MPG interface. Requires serial port and one handshake pin unless
-                               // KEYPAD_ENABLE is set to 2 when mode switching is done by the CMD_MPG_MODE_TOGGLE (0x8B)
-                               // command character. Set both MPG_ENABLE and KEYPAD_ENABLE to 2 to use a handshake pin anyway.
-//#define KEYPAD_ENABLE      1 // Set to 1 for I2C keypad, 2 for other input such as serial data
-//#define ODOMETER_ENABLE    1 // Odometer plugin.
-//#define TRINAMIC_ENABLE 2130 // Trinamic TMC2130 stepper driver support. NOTE: work in progress.
-//#define TRINAMIC_ENABLE 5160 // Trinamic TMC5160 stepper driver support. NOTE: work in progress.
-//#define TRINAMIC_I2C       0 // Trinamic I2C - SPI bridge interface.
-//#define TRINAMIC_DEV       1 // Development mode, adds a few M-codes to aid debugging. Do not enable in production code.
-//#define EEPROM_ENABLE     16 // I2C EEPROM/FRAM support. Set to 16 for 2K, 32 for 4K, 64 for 8K, 128 for 16K and 256 for 16K capacity.
-//#define EEPROM_IS_FRAM     1 // Uncomment when EEPROM is enabled and chip is FRAM, this to remove write delay.
-//#define ESTOP_ENABLE       0 // When enabled only real-time report requests will be executed when the reset pin is asserted.
-                               // Note: if left commented out the default setting is determined from COMPATIBILITY_LEVEL.
+//#define SDCARD_ENABLE           1 // Run gcode programs from SD card, requires sdcard plugin.
+//#define MPG_ENABLE              1 // Enable MPG interface. Requires serial port and one handshake pin unless
+                                    // KEYPAD_ENABLE is set to 2 when mode switching is done by the CMD_MPG_MODE_TOGGLE (0x8B)
+                                    // command character. Set both MPG_ENABLE and KEYPAD_ENABLE to 2 to use a handshake pin anyway.
+//#define KEYPAD_ENABLE           1 // Set to 1 for I2C keypad, 2 for other input such as serial data
+//#define ODOMETER_ENABLE         1 // Odometer plugin.
+//#define TRINAMIC_ENABLE      2130 // Trinamic TMC2130 stepper driver support. NOTE: work in progress.
+//#define TRINAMIC_ENABLE      5160 // Trinamic TMC5160 stepper driver support. NOTE: work in progress.
+//#define TRINAMIC_I2C            0 // Trinamic I2C - SPI bridge interface.
+//#define TRINAMIC_DEV            1 // Development mode, adds a few M-codes to aid debugging. Do not enable in production code.
+//#define EEPROM_ENABLE          16 // I2C EEPROM/FRAM support. Set to 16 for 2K, 32 for 4K, 64 for 8K, 128 for 16K and 256 for 16K capacity.
+//#define EEPROM_IS_FRAM          1 // Uncomment when EEPROM is enabled and chip is FRAM, this to remove write delay.
+//#define ESTOP_ENABLE            0 // When enabled only real-time report requests will be executed when the reset pin is asserted.
+                                    // Note: if left commented out the default setting is determined from COMPATIBILITY_LEVEL.
+// Optional control signals:
+// These will be assigned to aux input pins. Use the $pins command to check which pins are assigned.
+// NOTE: If not enough pins are available assignment will silently fail.
+// NOTE: STM32F103C8Tx variants only supports the safety door input!
+//#define SAFETY_DOOR_ENABLE      1
+//#define MOTOR_FAULT_ENABLE      1
+//#define MOTOR_WARNING_ENABLE    1
+//#define PROBE_DISCONNECT_ENABLE 1
+//#define STOP_DISABLE_ENABLE     1
+//#define BLOCK_DELETE_ENABLE     1
+//#define SINGLE_BLOCK_ENABLE     1
+//#define LIMITS_OVERRIDE_ENABLE  1
 
 // If the selected board map supports more than three motors ganging and/or auto-squaring
 // of axes can be enabled here.
@@ -65,4 +76,3 @@
 //#define Y_GANGED_LIM_MAX    1
 //#define Z_GANGED_LIM_MAX    1
 //
-
