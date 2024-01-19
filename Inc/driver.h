@@ -283,8 +283,8 @@ typedef struct {
     pin_group_t group;
     volatile bool active;
     volatile bool debounce;
-    pin_irq_mode_t irq_mode;
-    pin_mode_t cap;
+    pin_cap_t cap;
+    pin_mode_t mode;
     ioport_interrupt_callback_ptr interrupt_callback;
     aux_ctrl_t *aux_ctrl;
     const char *description;
