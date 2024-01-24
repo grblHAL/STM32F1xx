@@ -107,15 +107,31 @@ Programming port, top view (not mounted)
 #define M3_LIMIT_PIN            15 // IN4
 #endif
 
-  // Define spindle enable and spindle direction output pins.
-#define SPINDLE_ENABLE_PORT     GPIOC
-#define SPINDLE_ENABLE_PIN      6 // OUT1
-#define SPINDLE_DIRECTION_PORT  GPIOC
-#define SPINDLE_DIRECTION_PIN   7 // OUT2
-
 // Define spindle PWM output pin.
+#if DRIVER_SPINDLE_PWM_ENABLE
 #define SPINDLE_PWM_PORT_BASE   GPIOA_BASE
 #define SPINDLE_PWM_PIN         8 // AVI + ACM
+#else
+#define AUXOUTPUT1_PORT         GPIOA
+#define AUXOUTPUT1_PIN          8
+#endif
+
+// Define spindle enable and spindle direction output pins.
+#if DRIVER_SPINDLE_DIR_ENABLE
+#define SPINDLE_DIRECTION_PORT  GPIOC
+#define SPINDLE_DIRECTION_PIN   7 // OUT2
+#else
+#define AUXOUTPUT2_PORT         GPIOC
+#define AUXOUTPUT2_PIN          7
+#endif
+
+#if DRIVER_SPINDLE_ENABLE
+#define SPINDLE_ENABLE_PORT     GPIOC
+#define SPINDLE_ENABLE_PIN      6 // OUT1
+#else
+#define AUXOUTPUT3_PORT         GPIOC
+#define AUXOUTPUT3_PIN          6
+#endif
 
 // Define flood and mist coolant enable output pins.
 #define COOLANT_FLOOD_PORT      GPIOC
