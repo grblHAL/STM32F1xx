@@ -53,7 +53,7 @@
       "MAP": "Inc/btt_skr_mini_e3_2.0_map.h",
       "caps": {
         "axes": 4,
-        "eeprom": 3,
+        "eeprom": 32,
         "sdcard": 1,
         "serial_ports": 1,
         "trinamic": 2209,
@@ -73,7 +73,7 @@
       "MAP": "Inc/btt_skr_mini_e3_2.0_alt2_map.h",
       "caps": {
         "axes": 4,
-        "eeprom": 3,
+        "eeprom": 32,
         "sdcard": 1,
         "serial_ports": 1,
         "trinamic": 2209,
