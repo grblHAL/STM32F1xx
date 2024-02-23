@@ -55,6 +55,7 @@
 // These will be assigned to aux input pins. Use the $pins command to check which pins are assigned.
 // NOTE: If not enough pins are available assignment will silently fail.
 // NOTE: STM32F103C8Tx variants only supports the safety door input!
+//#define PROBE_ENABLE            0 // Default enabled, remove comment to disable probe input.
 //#define SAFETY_DOOR_ENABLE      1
 //#define MOTOR_FAULT_ENABLE      1
 //#define MOTOR_WARNING_ENABLE    1

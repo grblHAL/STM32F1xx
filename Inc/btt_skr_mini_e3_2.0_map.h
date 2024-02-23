@@ -3,18 +3,18 @@
 
   Part of grblHAL
 
-  Grbl is free software: you can redistribute it and/or modify
+  grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Grbl is distributed in the hope that it will be useful,
+  grblHAL is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef STM32F103xE
@@ -140,24 +140,27 @@
 
 #define AUXINPUT0_PORT          GPIOC
 #define AUXINPUT0_PIN           3
+#define AUXINPUT1_PORT          GPIOA
+#define AUXINPUT1_PIN           1
+#define AUXINPUT2_PORT          GPIOC
+#define AUXINPUT2_PIN           14
+
+#if PROBE_ENABLE
+#define PROBE_PORT              AUXINPUT2_PORT
+#define PROBE_PIN               AUXINPUT2_PIN
+#endif
+
+#if I2C_STROBE_ENABLE
+#define I2C_STROBE_PORT         AUXINPUT1_PORT
+#define I2C_STROBE_PIN          AUXINPUT1_PIN
+#endif
 
 #if SAFETY_DOOR_ENABLE
 #define SAFETY_DOOR_PORT        AUXINPUT0_PORT
 #define SAFETY_DOOR_PIN         AUXINPUT0_PIN
-#endif
-
-#if MOTOR_FAULT_ENABLE
+#elif MOTOR_FAULT_ENABLE
 #define MOTOR_FAULT_PORT        AUXINPUT0_PORT
 #define MOTOR_FAULT_PIN         AUXINPUT0_PIN
-#endif
-
-// Define probe switch input pin.
-#define PROBE_PORT              GPIOC
-#define PROBE_PIN               14 //PC14
-
-#if I2C_STROBE_ENABLE
-#define I2C_STROBE_PORT         GPIOA
-#define I2C_STROBE_PIN          1 //PA1
 #endif
 
 #if SDCARD_ENABLE

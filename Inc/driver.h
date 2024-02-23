@@ -6,18 +6,18 @@
 
   Copyright (c) 2019-2024 Terje Io
 
-  Grbl is free software: you can redistribute it and/or modify
+  grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Grbl is distributed in the hope that it will be useful,
+  grblHAL is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -191,16 +191,6 @@
 
 #endif // SPINDLE_PWM_PORT_BASE
 
-#if SPINDLE_PWM_TIMER_CH == 4
-#define DEBOUNCE_TIMER_N 1
-#else
-#define DEBOUNCE_TIMER_N 4
-#endif
-#define DEBOUNCE_TIMER              timer(DEBOUNCE_TIMER_N)
-#define DEBOUNCE_TIMER_CLKEN        timerCLKENA(DEBOUNCE_TIMER_N)
-#define DEBOUNCE_TIMER_IRQn         timerINT(DEBOUNCE_TIMER_N)
-#define DEBOUNCE_TIMER_IRQHandler   timerHANDLER(DEBOUNCE_TIMER_N)
-
 #if SPINDLE_PWM_TIMER_CH == 2
 #define STEPPER_TIMER_N 1
 #else
@@ -208,8 +198,13 @@
 #endif
 #define STEPPER_TIMER               timer(STEPPER_TIMER_N)
 #define STEPPER_TIMER_CLKEN         timerCLKENA(STEPPER_TIMER_N)
+#if STEPPER_TIMER_N == 1
+#define STEPPER_TIMER_IRQn          TIM1_UP_IRQn
+#define STEPPER_TIMER_IRQHandler    TIM1_UP_IRQHandler
+#else
 #define STEPPER_TIMER_IRQn          timerINT(STEPPER_TIMER_N)
 #define STEPPER_TIMER_IRQHandler    timerHANDLER(STEPPER_TIMER_N)
+#endif
 
 #define PULSE_TIMER_N               3
 #define PULSE_TIMER                 timer(PULSE_TIMER_N)
@@ -277,25 +272,24 @@
 
 typedef struct {
     pin_function_t id;
-    GPIO_TypeDef *port;
-    uint8_t pin;
-    uint32_t bit;
-    pin_group_t group;
-    volatile bool active;
-    volatile bool debounce;
     pin_cap_t cap;
     pin_mode_t mode;
+    uint8_t pin;
+    uint32_t bit;
+    GPIO_TypeDef *port;
+    pin_group_t group;
+    uint8_t user_port;
+    volatile bool active;
     ioport_interrupt_callback_ptr interrupt_callback;
-    aux_ctrl_t *aux_ctrl;
     const char *description;
 } input_signal_t;
 
 typedef struct {
     pin_function_t id;
-    GPIO_TypeDef *port;
-    uint8_t pin;
-    pin_group_t group;
     pin_mode_t mode;
+    uint8_t pin;
+    GPIO_TypeDef *port;
+    pin_group_t group;
     const char *description;
 } output_signal_t;
 
@@ -315,7 +309,7 @@ bool driver_init (void);
 void gpio_irq_enable (const input_signal_t *input, pin_irq_mode_t irq_mode);
 #ifdef HAS_IOPORTS
 void ioports_init (pin_group_pins_t *aux_inputs, pin_group_pins_t *aux_outputs);
-void ioports_event (uint32_t bit);
+void ioports_event (input_signal_t *input);
 #endif
 
 #endif // __DRIVER_H__

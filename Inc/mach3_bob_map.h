@@ -3,20 +3,20 @@
 
   Part of grblHAL
 
-  Copyright (c) 2023 @r3l4x-pt
+  Copyright (c) 2023-2024 @r3l4x-pt
 
-  Grbl is free software: you can redistribute it and/or modify
+  grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Grbl is distributed in the hope that it will be useful,
+  grblHAL is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
@@ -148,27 +148,27 @@ Programming port, top view (not mounted)
 
 #define AUXINPUT0_PORT          GPIOB
 #define AUXINPUT0_PIN           6 // 10pin IDC, 5
+#define AUXINPUT1_PORT          GPIOB
+#define AUXINPUT1_PIN           3 // 10pin IDC, 8
+#define AUXINPUT2_PORT          GPIOB
+#define AUXINPUT2_PIN           4 // 10pin IDC, 7
+
+#if PROBE_ENABLE
+#define PROBE_PORT              AUXINPUT2_PORT
+#define PROBE_PIN               AUXINPUT2_PIN
+#endif
+
+#if MPG_MODE == 1
+#define MPG_MODE_PORT           AUXINPUT1_PORT
+#define MPG_MODE_PIN            AUXINPUT1_PIN
+#endif
 
 #if SAFETY_DOOR_ENABLE
 #define SAFETY_DOOR_PORT        AUXINPUT0_PORT
 #define SAFETY_DOOR_PIN         AUXINPUT0_PIN
-#endif
-
-#if MOTOR_FAULT_ENABLE
+#elif MOTOR_FAULT_ENABLE
 #define MOTOR_FAULT_PORT        AUXINPUT0_PORT
 #define MOTOR_FAULT_PIN         AUXINPUT0_PIN
-#endif
-
-// Define probe switch input pin.
-#define PROBE_PORT              GPIOB
-#define PROBE_PIN               4 // 10pin IDC, 7
-
-#if MPG_MODE == 1
-#define MPG_MODE_PORT           GPIOB
-#define MPG_MODE_PIN            3 // 10pin IDC, 8
-#else
-#define AUXOUTPUT0_PORT         GPIOB
-#define AUXOUTPUT0_PIN          3 // 10pin IDC, 8
 #endif
 
 /**/

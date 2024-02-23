@@ -5,18 +5,65 @@
 
   Copyright (c) 2023 @macbef
 
-  Grbl is free software: you can redistribute it and/or modify
+  grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Grbl is distributed in the hope that it will be useful,
+  grblHAL is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+
+10 pin IDC connector for RS233, top view
+
++-----  -----+
+|  9 7 5 3 1 |
+| 10 8 6 4 2 |
++------------+
+ 1 5v
+ 2
+ 3 PB10 - UART3 TX, via MAX3232, DOUT1
+ 4
+ 5 PB11 - UART3 RX, via MAX3232, RIN1
+ 6
+ 7
+ 8
+ 9 GND
+10
+
+
+J3, top view (not mounted)
+
++---  ---+
+|  2 4 6 |
+| 1 3 5  |
++--------+
+
+1 PA9  - UART1 TX
+2 PA10 - UART1 RX
+3 GND
+4 ?
+5 3v3
+6 BOOT0 (?)
+
+Programming port, top view (not mounted)
+
++---   ---+
+| 1 2 3 4 |
++---------+
+
+1 3v3
+2 SWDCK
+3 SWDIO
+4 GND
+
 */
 
 #if EEPROM_ENABLE
@@ -28,7 +75,7 @@
 #endif
 
 #define BOARD_NAME "SVM"
-
+//#define HAS_IOPORTS
 #define SERIAL_PORT             1 // GPIOA: TX = 9, RX = 10
 #define SERIAL1_PORT            3 // GPIOB: TX = 10, RX = 11 - Cannot be enabled if I2C port 2 is enabled!
 //#undef MPG_STREAM
@@ -137,24 +184,27 @@
 
 #define AUXINPUT0_PORT          GPIOC
 #define AUXINPUT0_PIN           4
+#define AUXINPUT1_PORT          GPIOC
+#define AUXINPUT1_PIN           3
+#define AUXINPUT2_PORT          GPIOB
+#define AUXINPUT2_PIN           15
 
 #if SAFETY_DOOR_ENABLE
 #define SAFETY_DOOR_PORT        AUXINPUT0_PORT
 #define SAFETY_DOOR_PIN         AUXINPUT0_PIN
-#endif
-
-#if MOTOR_FAULT_ENABLE
+#elif MOTOR_FAULT_ENABLE
 #define MOTOR_FAULT_PORT        AUXINPUT0_PORT
 #define MOTOR_FAULT_PIN         AUXINPUT0_PIN
 #endif
 
-// Define probe switch input pin.
-#define PROBE_PORT              GPIOC
-#define PROBE_PIN               3
+#if PROBE_ENABLE
+#define PROBE_PORT              AUXINPUT1_PORT
+#define PROBE_PIN               AUXINPUT1_PIN
+#endif
 
 #if I2C_STROBE_ENABLE
-#define I2C_STROBE_PORT         GPIOB
-#define I2C_STROBE_PIN          15
+#define I2C_STROBE_PORT         AUXINPUT2_PORT
+#define I2C_STROBE_PIN          AUXINPUT2_PIN
 #endif
 
 #if SDCARD_ENABLE
