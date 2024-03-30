@@ -1903,7 +1903,12 @@ bool driver_init (void)
 #endif
     hal.limits_cap = get_limits_cap();
     hal.home_cap = get_home_cap();
-    hal.driver_cap.mist_control = On;
+#ifdef COOLANT_FLOOD_PIN
+    hal.coolant_cap.flood = On;
+#endif
+#ifdef COOLANT_MIST_PIN
+    hal.coolant_cap.mist = On;
+#endif
     hal.driver_cap.software_debounce = On;
     hal.driver_cap.step_pulse_delay = On;
     hal.driver_cap.amass_level = 3;
