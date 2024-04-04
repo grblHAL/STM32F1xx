@@ -386,7 +386,7 @@ static void stepperEnable (axes_signals_t enable)
 // Starts stepper driver ISR timer and forces a stepper driver interrupt callback
 static void stepperWakeUp (void)
 {
-    stepperEnable((axes_signals_t){AXES_BITMASK});
+    hal.stepper.enable((axes_signals_t){AXES_BITMASK});
 
     STEPPER_TIMER->ARR = hal.f_step_timer / 500; // ~2ms delay to allow drivers time to wake up.
     STEPPER_TIMER->EGR = TIM_EGR_UG;
@@ -1770,7 +1770,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "240220";
+    hal.driver_version = "240404";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
