@@ -95,6 +95,16 @@ static const io_stream_t *serial1Init(uint32_t baud_rate);
 #define UART0_IRQHandler usarthandler(3)
 #define UART0_CLK_ENABLE usartclken(3)
 #define UART0_CLK HAL_RCC_GetPCLK1Freq
+#elif SERIAL_PORT == 4
+#define UART0_TX_PIN 10
+#define UART0_TX_PORT GPIOC
+#define UART0_RX_PIN 11
+#define UART0_RX_PORT GPIOC
+#define UART0 UART4
+#define UART0_IRQ UART4_IRQn
+#define UART0_IRQHandler UART4_IRQHandler
+#define UART0_CLK_ENABLE __HAL_RCC_UART4_CLK_ENABLE
+#define UART0_CLK HAL_RCC_GetPCLK1Freq
 #elif SERIAL_PORT == 5
 #define UART0_TX_PIN 12
 #define UART0_TX_PORT GPIOC
@@ -157,6 +167,16 @@ static const io_stream_t *serial1Init(uint32_t baud_rate);
 #define UART1_IRQ usartint(3)
 #define UART1_IRQHandler usarthandler(3)
 #define UART1_CLK_ENABLE usartclken(3)
+#define UART1_CLK HAL_RCC_GetPCLK1Freq
+#elif SERIAL1_PORT == 4
+#define UART1_TX_PIN 10
+#define UART1_TX_PORT GPIOC
+#define UART1_RX_PIN 11
+#define UART1_RX_PORT GPIOC
+#define UART1 UART4
+#define UART1_IRQ UART4_IRQn
+#define UART1_IRQHandler UART4_IRQHandler
+#define UART1_CLK_ENABLE __HAL_RCC_UART4_CLK_ENABLE
 #define UART1_CLK HAL_RCC_GetPCLK1Freq
 #elif SERIAL1_PORT == 5
 #define UART1_TX_PIN 12
