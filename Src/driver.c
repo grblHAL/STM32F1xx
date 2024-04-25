@@ -1749,9 +1749,9 @@ bool driver_init (void)
         .Mode = GPIO_MODE_OUTPUT_PP
     };
 
-    HAL_GPIO_Init(MPG_MODE_PORT, &GPIO_Init);
+    DIGITAL_OUT(MPG_MODE_PORT, MPG_MODE_PIN, 0);
 
-    DIGITAL_OUT(MPG_MODE_PORT, MPG_MODE_PIN, 1);
+    HAL_GPIO_Init(MPG_MODE_PORT, &GPIO_Init);
 
 #endif
 
@@ -1770,7 +1770,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "240404";
+    hal.driver_version = "240425";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -1955,6 +1955,12 @@ bool driver_init (void)
                 input->mode.debounce = hal.driver_cap.software_debounce;
             }
             limit_inputs.n_pins++;
+        } else if(input->group == PinGroup_Control && (CONTROL_MASK & input->bit)) {
+            pin_irq[__builtin_ffs(input->bit) - 1] = input;
+#if xSAFETY_DOOR_ENABLE
+            if(input->id == Input_SafetyDoor)
+                input->mode.debounce = hal.driver_cap.software_debounce;
+#endif
         }
     }
 
@@ -2086,7 +2092,7 @@ void core_pin_debounce (void *pin)
 #endif
 
     if(input->mode.irq_mode == IRQ_Mode_Change ||
-         DIGITAL_IN(input->port, input->pin) == (input->mode.irq_mode == IRQ_Mode_Falling ? 0 : 1)) {
+         DIGITAL_IN(input->port, input->pin) == (input->mode.irq_mode == IRQ_Mode_Falling ? 0 : 1) || true) {
 
         if(input->group & (PinGroup_Control)) {
             hal.control.interrupt_callback(systemGetState());

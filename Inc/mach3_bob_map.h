@@ -33,10 +33,10 @@ LED PC2
  2 gnd
  3 PB8  - feed hold
  4 PB9  - reset or e-stop
- 5 PB6  - start safety door
- 6 PB7  - cycle
+ 5 PB6  - safety door or aux in 0
+ 6 PB7  - cycle start
  7 PB4  - probe
- 8 PB3  - MPG mode or Aux out 0
+ 8 PB3  - MPG mode or aux in 1
  9 PD2  - UART5 Rx - remove pull up/pull down resistors!
 10 PC12 - UART5 Tx - remove pull up/pull down resistors!
 
