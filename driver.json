@@ -44,7 +44,8 @@
           "STM32F103xB": "",
           "RX_BUFFER_SIZE": 512,
           "DEFAULT_PLANNER_BUFFER_BLOCKS": 35,
-          "NO_SETTINGS_DESCRIPTIONS": ""
+          "NO_SETTINGS_DESCRIPTIONS": "",
+          "NGC_PARAMETERS_ENABLE": 0
       }
     },
     {
