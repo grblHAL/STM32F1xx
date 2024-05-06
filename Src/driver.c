@@ -1770,7 +1770,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "240425";
+    hal.driver_version = "240506";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -2092,7 +2092,7 @@ void core_pin_debounce (void *pin)
 #endif
 
     if(input->mode.irq_mode == IRQ_Mode_Change ||
-         DIGITAL_IN(input->port, input->pin) == (input->mode.irq_mode == IRQ_Mode_Falling ? 0 : 1) || true) {
+         DIGITAL_IN(input->port, input->pin) == (input->mode.irq_mode == IRQ_Mode_Falling ? 0 : 1)) {
 
         if(input->group & (PinGroup_Control)) {
             hal.control.interrupt_callback(systemGetState());
