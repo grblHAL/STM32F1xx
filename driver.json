@@ -36,7 +36,6 @@
       "MAP": "Inc/cnc3040_map.h",
       "caps": {
         "axes": 5,
-		"auto_square": 0,
         "digital_in": 4,
         "digital_out": 6
       },
@@ -97,6 +96,7 @@
       "MAP": "Inc/mach3_bob_map.h",
       "caps": {
         "axes": 4,
+        "auto_square": 1,
         "digital_out": 1,
         "pio_board": "genericSTM32F103RC",
         "ldscript": "STM32F103RCTX_FLASH.ld"
@@ -112,6 +112,7 @@
       "MAP": "Inc/mach3_bob_map.h",
       "caps": {
         "axes": 4,
+        "auto_square": 1,
         "digital_out": 1,
         "pio_board": "genericSTM32F103RC",
         "ldscript": "STM32F103RCTX_FLASH.ld"
