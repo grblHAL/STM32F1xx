@@ -27,6 +27,8 @@
 //#define BOARD_BTT_SKR_MINI_E3_V20
 //#define BOARD_BTT_SKR_MINI_E3_V20_ALT2
 //#define BOARD_SVM
+//#define BOARD_CREALITY_V2_2_2 // Not tested!
+//#define BOARD_CREALITY_V2_2_7 // Not tested!
 //#define BOARD_MY_MACHINE // Add my_machine_map.h before enabling this!
 
 // Configuration

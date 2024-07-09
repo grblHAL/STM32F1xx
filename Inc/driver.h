@@ -118,6 +118,8 @@
   #include "svm_map.h"
 #elif defined(BOARD_SUPERGERBIL)
   #include "supergerbil_map.h"
+#elif defined(BOARD_CREALITY_V2_2_2) || defined(BOARD_CREALITY_V2_2_7)
+  #include "creality_v2.2.x_map.h"
 #else // default board
   #include "generic_map.h"
 #endif
