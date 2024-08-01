@@ -33,7 +33,7 @@
       "notes": "Not recommended due to limited memory capacity.",
       "symbol": "BOARD_CNC3040",
       "URL": "https://github.com/shaise/GrblCNC",
-      "MAP": "Inc/cnc3040_map.h",
+      "MAP": "boards/cnc3040_map.h",
       "caps": {
         "axes": 5,
         "digital_in": 4,
@@ -51,7 +51,7 @@
       "name": "BTT SKR MINI E3 V2.0 4-axis (Bootloader)",
       "symbol": "BOARD_BTT_SKR_MINI_E3_V20",
       "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
-      "MAP": "Inc/btt_skr_mini_e3_2.0_map.h",
+      "MAP": "boards/btt_skr_mini_e3_2.0_map.h",
       "caps": {
         "axes": 4,
         "eeprom": 32,
@@ -72,7 +72,7 @@
       "name": "BTT SKR MINI E3 V2.0 4-axis Alt2 (Bootloader)",
       "symbol": "BOARD_BTT_SKR_MINI_E3_V20_ALT2",
       "URL": "https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3",
-      "MAP": "Inc/btt_skr_mini_e3_2.0_alt2_map.h",
+      "MAP": "boards/btt_skr_mini_e3_2.0_alt2_map.h",
       "caps": {
         "axes": 4,
         "eeprom": 32,
@@ -93,7 +93,7 @@
       "name": "Mach3 USB breakout (BSMCE04U)",
       "symbol": "BOARD_MACH3_BOB",
       "URL": "https://embeddedtronicsblog.wordpress.com/2023/05/17/grbl-running-on-the-4-axis-bsmce04-pp/",
-      "MAP": "Inc/mach3_bob_map.h",
+      "MAP": "boards/mach3_bob_map.h",
       "caps": {
         "axes": 4,
 		"auto_square": 1,
@@ -109,7 +109,7 @@
       "name": "Mach3 USB breakout (BSMCE04U), 12 MHz crystal",
       "symbol": "BOARD_MACH3_BOB",
       "URL": "https://embeddedtronicsblog.wordpress.com/2023/05/17/grbl-running-on-the-4-axis-bsmce04-pp/",
-      "MAP": "Inc/mach3_bob_map.h",
+      "MAP": "boards/mach3_bob_map.h",
       "caps": {
         "axes": 4,
 		"auto_square": 1,
@@ -126,7 +126,7 @@
       "name": "SVM F103RC",
       "symbol": "BOARD_SVM",
       "URL": "https://github.com/grblHAL/core/discussions/250",
-      "MAP": "Inc/svm_map.h",
+      "MAP": "boards/svm_map.h",
       "caps": {
         "axes": 6,
         "i2c_strobe": 1,
@@ -145,7 +145,7 @@
       "notes": "Untested!",
       "symbol": "BOARD_CREALITY_V2_2_2",
       "URL": "https://github.com/grblHAL/STM32F1xx/issues/33",
-      "MAP": "Inc/creality_v2.2.x_map.h",
+      "MAP": "boards/creality_v2.2.x_map.h",
       "caps": {
         "axes": 4,
         "i2c_strobe": 1,
@@ -164,7 +164,7 @@
       "notes": "Untested!",
       "symbol": "BOARD_CREALITY_V2_2_7",
       "URL": "https://github.com/grblHAL/STM32F1xx/issues/33",
-      "MAP": "Inc/creality_v2.2.x_map.h",
+      "MAP": "boards/creality_v2.2.x_map.h",
       "caps": {
         "axes": 4,
         "i2c_strobe": 1,

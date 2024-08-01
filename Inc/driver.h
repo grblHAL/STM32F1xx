@@ -103,25 +103,25 @@
 #endif
 
 #ifdef BOARD_CNC_BOOSTERPACK
-  #include "cnc_boosterpack_map.h"
+  #include "boards/cnc_boosterpack_map.h"
 #elif defined(BOARD_CNC3040)
-  #include "cnc3040_map.h"
+  #include "boards/cnc3040_map.h"
 #elif defined(BOARD_BTT_SKR_MINI_E3_V20)
-  #include "btt_skr_mini_e3_2.0_map.h"
+  #include "boards/btt_skr_mini_e3_2.0_map.h"
 #elif defined(BOARD_BTT_SKR_MINI_E3_V20_ALT2)
-  #include "btt_skr_mini_e3_2.0_alt2_map.h"
+  #include "boards/btt_skr_mini_e3_2.0_alt2_map.h"
 #elif defined(BOARD_MACH3_BOB)
-  #include "mach3_bob_map.h"
-#elif defined(BOARD_MY_MACHINE)
-  #include "my_machine_map.h"
+  #include "boards/mach3_bob_map.h"
 #elif defined(BOARD_SVM)
-  #include "svm_map.h"
+  #include "boards/svm_map.h"
 #elif defined(BOARD_SUPERGERBIL)
-  #include "supergerbil_map.h"
+  #include "boards/supergerbil_map.h"
 #elif defined(BOARD_CREALITY_V2_2_2) || defined(BOARD_CREALITY_V2_2_7)
-  #include "creality_v2.2.x_map.h"
+  #include "boards/creality_v2.2.x_map.h"
+#elif defined(BOARD_MY_MACHINE)
+  #include "boards/my_machine_map.h"
 #else // default board
-  #include "generic_map.h"
+  #include "boards/generic_map.h"
 #endif
 
 #ifdef SPINDLE_PWM_PORT_BASE
