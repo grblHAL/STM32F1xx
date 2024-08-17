@@ -38,12 +38,11 @@
 #define USB_SERIAL_CDC            1 // Serial communication via native USB. Comment out for UART communication.
 #endif
 //#define SDCARD_ENABLE           1 // Run gcode programs from SD card, requires sdcard plugin.
-//#define MPG_ENABLE              1 // Enable MPG interface. Requires a serial port and means to switch between normal and MPG mode.
-                                    // 1: Mode switching is by handshake pin input unless the keypad plugin is enabled in mode 2 which
-                                    //    uses mode switching by the CMD_MPG_MODE_TOGGLE (0x8B) command character.
-                                    // 2: Mode switching is by the CMD_MPG_MODE_TOGGLE command character. The keypad plugin is not required.
+//#define MPG_ENABLE              1 // Enable MPG interface. Requires a serial stream and means to switch between normal and MPG mode.
+                                    // 1: Mode switching is by handshake pin.
+                                    // 2: Mode switching is by the CMD_MPG_MODE_TOGGLE (0x8B) command character.
 //#define KEYPAD_ENABLE           1 // 1: uses a I2C keypad for input.
-                                    // 2: uses a serial port for input. If MPG_ENABLE is set to 1 the serial stream is shared with the MPG.
+                                    // 2: uses a serial stream for input. If MPG_ENABLE is set > 0 the serial stream is shared with the MPG.
 //#define ODOMETER_ENABLE         1 // Odometer plugin.
 //#define TRINAMIC_ENABLE      2130 // Trinamic TMC2130 stepper driver support. NOTE: work in progress.
 //#define TRINAMIC_ENABLE      5160 // Trinamic TMC5160 stepper driver support. NOTE: work in progress.

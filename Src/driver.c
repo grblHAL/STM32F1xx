@@ -66,10 +66,6 @@
 #include "eeprom/eeprom.h"
 #endif
 
-#if KEYPAD_ENABLE
-#include "keypad/keypad.h"
-#endif
-
 #if ODOMETER_ENABLE
 #include "odometer/odometer.h"
 #endif
@@ -904,7 +900,7 @@ static probe_state_t probeGetState (void)
 
 #endif // PROBE_PIN
 
-#if MPG_MODE == 1
+#if MPG_ENABLE == 1
 
 static void mpg_select (void *data)
 {
@@ -917,7 +913,7 @@ static void mpg_enable (void *data)
         stream_mpg_enable(true);
 }
 
-#endif // MPG_MODE == 1
+#endif // MPG_ENABLE == 1
 
 #if AUX_CONTROLS_ENABLED
 
@@ -1738,7 +1734,7 @@ bool driver_init (void)
     __enable_irq();
 #endif
 
-#if MPG_MODE == 1
+#if MPG_ENABLE == 1
 
     // Drive MPG mode input pin low until setup complete
 
@@ -1770,7 +1766,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "240506";
+    hal.driver_version = "240817";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -2015,23 +2011,17 @@ bool driver_init (void)
     board_init();
 #endif
 
-#if MPG_MODE == 1
-  #if KEYPAD_ENABLE == 2
-    if((hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, keypad_enqueue_keycode)))
-        protocol_enqueue_foreground_task(mpg_enable, NULL);
-  #else
-    if((hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, NULL)))
-        protocol_enqueue_foreground_task(mpg_enable, NULL);
-  #endif
-#elif MPG_MODE == 2
-    hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, keypad_enqueue_keycode);
-#elif MPG_MODE == 3
-    hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, stream_mpg_check_enable);
-#elif KEYPAD_ENABLE == 2
-    stream_open_instance(KEYPAD_STREAM, 115200, keypad_enqueue_keycode, "Keypad");
-#endif
-
 #include "grbl/plugins_init.h"
+
+#if MPG_ENABLE == 1
+    if(!hal.driver_cap.mpg_mode)
+        hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, NULL);
+    if(hal.driver_cap.mpg_mode)
+        protocol_enqueue_foreground_task(mpg_enable, NULL);
+#elif MPG_ENABLE == 2
+    if(!hal.driver_cap.mpg_mode)
+        hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, stream_mpg_check_enable);
+#endif
 
     // No need to move version check before init.
     // Compiler will fail any signature mismatch for existing entries.

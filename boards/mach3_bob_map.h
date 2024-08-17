@@ -158,7 +158,7 @@ Programming port, top view (not mounted)
 #define PROBE_PIN               AUXINPUT2_PIN
 #endif
 
-#if MPG_MODE == 1
+#if MPG_ENABLE == 1
 #define MPG_MODE_PORT           AUXINPUT1_PORT
 #define MPG_MODE_PIN            AUXINPUT1_PIN
 #endif
