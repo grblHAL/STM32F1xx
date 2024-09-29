@@ -255,8 +255,8 @@
 #error Trinamic plugin not supported!
 #endif
 
-#if (!USB_SERIAL_CDC || MPG_ENABLE) && !defined(SERIAL_MOD)
-#define SERIAL_MOD 1
+#if (!USB_SERIAL_CDC || MPG_ENABLE) && !defined(SERIAL_PORT)
+#define SERIAL_PORT 1
 #endif
 
 #ifndef RESET_PORT
