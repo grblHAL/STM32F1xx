@@ -8,6 +8,7 @@ src_dir = Src
 [common]
 build_flags =
   -I .
+  -I boards
   -I FatFS
   -I Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
   -I Middlewares/ST/STM32_USB_Device_Library/Core/Inc
