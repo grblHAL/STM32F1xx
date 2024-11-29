@@ -782,6 +782,9 @@ void UART1_IRQHandler (void)
                 rxbuf1.head = next_head;                         // and update pointer
             }
         }
+#ifdef BOARD_BTT_SKR_MINI_E3_V20 // restricting to just this board. Ref. https://github.com/grblHAL/STM32F1xx/issues/49
+        UART1->CR1 |= USART_CR1_RXNEIE;
+#endif
     }
 
     if((UART1->SR & USART_SR_TXE) && (UART1->CR1 & USART_CR1_TXEIE)) {
