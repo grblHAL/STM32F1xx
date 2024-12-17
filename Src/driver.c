@@ -31,8 +31,11 @@
 #include "driver.h"
 #include "serial.h"
 
-#if defined(HAS_IOPORTS)
+#ifdef HAS_IOPORTS
 #define AUX_DEVICES
+#ifndef AUX_CONTROLS
+#define AUX_CONTROLS (AUX_CONTROL_SPINDLE|AUX_CONTROL_COOLANT)
+#endif
 #endif
 
 #include "grbl/protocol.h"
@@ -44,8 +47,8 @@
 #if defined(STM32F103xB)
 #undef AUX_CONTROLS_ENABLED
 #define AUX_CONTROLS_ENABLED 0
-//#undef AUXINPUT_MASK
-//#define AUXINPUT_MASK 0
+#undef AUXINPUT_MASK
+#define AUXINPUT_MASK 0
 #endif
 
 #ifdef I2C_PORT
@@ -222,15 +225,21 @@ static output_signal_t outputpin[] = {
     { .id = Output_StepperEnableZ,  .port = Z2_ENABLE_PORT,         .pin = Z2_ENABLE_PIN,           .group = PinGroup_StepperEnable },
 #endif
 #endif // !TRINAMIC_MOTOR_ENABLE
+#if !(AUX_CONTROLS & AUX_CONTROL_SPINDLE)
 #ifdef SPINDLE_ENABLE_PIN
     { .id = Output_SpindleOn,       .port = SPINDLE_ENABLE_PORT,    .pin = SPINDLE_ENABLE_PIN,      .group = PinGroup_SpindleControl },
 #endif
 #ifdef SPINDLE_DIRECTION_PIN
     { .id = Output_SpindleDir,      .port = SPINDLE_DIRECTION_PORT, .pin = SPINDLE_DIRECTION_PIN,   .group = PinGroup_SpindleControl },
 #endif
+#endif
+#if !(AUX_CONTROLS & AUX_CONTROL_COOLANT)
+#ifdef COOLANT_FLOOD_PIN
     { .id = Output_CoolantFlood,    .port = COOLANT_FLOOD_PORT,     .pin = COOLANT_FLOOD_PIN,       .group = PinGroup_Coolant },
+#endif
 #ifdef COOLANT_MIST_PIN
     { .id = Output_CoolantMist,     .port = COOLANT_MIST_PORT,      .pin = COOLANT_MIST_PIN,        .group = PinGroup_Coolant },
+#endif
 #endif
 #ifdef SD_CS_PORT
     { .id = Output_SdCardCS,        .port = SD_CS_PORT,             .pin = SD_CS_PIN,               .group = PinGroup_SdCard },
@@ -248,6 +257,12 @@ static output_signal_t outputpin[] = {
   #ifdef AUXOUTPUT3_PORT
     { .id = Output_Aux3,            .port = AUXOUTPUT3_PORT,        .pin = AUXOUTPUT3_PIN,          .group = PinGroup_AuxOutput },
   #endif
+  #ifdef AUXOUTPUT4_PORT
+    { .id = Output_Aux4,            .port = AUXOUTPUT4_PORT,        .pin = AUXOUTPUT4_PIN,          .group = PinGroup_AuxOutput },
+  #endif
+  #ifdef AUXOUTPUT5_PORT
+    { .id = Output_Aux5,            .port = AUXOUTPUT5_PORT,        .pin = AUXOUTPUT5_PIN,          .group = PinGroup_AuxOutput }
+  #endif
 #endif
 };
 
@@ -262,7 +277,7 @@ static bool IOInitDone = false;
 #if DRIVER_SPINDLE_ENABLE
 static spindle_id_t spindle_id = -1;
 #endif
-#if DRIVER_SPINDLE_PWM_ENABLE
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 static bool pwmEnabled = false;
 static spindle_pwm_t spindle_pwm;
 #endif
@@ -284,7 +299,9 @@ static void aux_irq_handler (uint8_t port, bool state);
 #endif
 
 #ifdef PROBE_PIN
+#ifdef AUX_DEVICES
 static uint8_t probe_port;
+#endif
 static probe_state_t probe = {
     .connected = On
 };
@@ -985,6 +1002,20 @@ static bool aux_claim_explicit (aux_ctrl_t *aux_ctrl)
 
 #endif // AUX_CONTROLS_ENABLED
 
+#if AUX_CONTROLS
+
+bool aux_out_claim_explicit (aux_ctrl_out_t *aux_ctrl)
+{
+    if(ioport_claim(Port_Digital, Port_Output, &aux_ctrl->aux_port, NULL))
+        ioport_assign_out_function(aux_ctrl, &((output_signal_t *)aux_ctrl->output)->id);
+    else
+        aux_ctrl->aux_port = 0xFF;
+
+    return aux_ctrl->aux_port != 0xFF;
+}
+
+#endif // AUX_CONTROLS
+
 #if DRIVER_SPINDLE_ENABLE
 
 // Static spindle (off, on cw & on ccw)
@@ -1021,7 +1052,7 @@ static void spindleSetState (spindle_ptrs_t *spindle, spindle_state_t state, flo
     }
 }
 
-#if DRIVER_SPINDLE_PWM_ENABLE
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 
 // Variable spindle control functions
 
@@ -1143,7 +1174,7 @@ bool spindleConfig (spindle_ptrs_t *spindle)
     return true;
 }
 
-#endif // DRIVER_SPINDLE_PWM_ENABLE
+#endif // DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 
 // Returns spindle state in a spindle_state_t variable
 static spindle_state_t spindleGetState (spindle_ptrs_t *spindle)
@@ -1167,7 +1198,9 @@ static spindle_state_t spindleGetState (spindle_ptrs_t *spindle)
 static void coolantSetState (coolant_state_t mode)
 {
     mode.value ^= settings.coolant.invert.mask;
+#ifdef COOLANT_FLOOD_PIN
     BITBAND_PERI(COOLANT_FLOOD_PORT->ODR, COOLANT_FLOOD_PIN) = mode.flood;
+#endif
 #ifdef COOLANT_MIST_PIN
     BITBAND_PERI(COOLANT_MIST_PORT->ODR, COOLANT_MIST_PIN) = mode.mist;
 #endif
@@ -1179,7 +1212,9 @@ static coolant_state_t coolantGetState (void)
     coolant_state_t state;
 
     state.mask = settings.coolant.invert.mask;
+#ifdef COOLANT_FLOOD_PIN
     state.flood = (COOLANT_FLOOD_PORT->IDR & COOLANT_FLOOD_BIT) != 0;
+#endif
 #ifdef COOLANT_MIST_PIN
     state.mist  = (COOLANT_MIST_PORT->IDR & COOLANT_MIST_BIT) != 0;
 #endif
@@ -1257,13 +1292,13 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
             .Speed = GPIO_SPEED_FREQ_HIGH
         };
 
-#if DRIVER_SPINDLE_PWM_ENABLE
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
         if(changed.spindle) {
             spindleConfig(spindle_get_hal(spindle_id, SpindleHAL_Configured));
             if(spindle_id == spindle_get_default())
                 spindle_select(spindle_id);
         }
-#endif // DRIVER_SPINDLE_PWM_ENABLE
+#endif // DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 
         pulse_length = (uint32_t)(10.0f * (settings->steppers.pulse_microseconds - STEP_PULSE_LATENCY)) - 1;
 
@@ -1561,13 +1596,15 @@ static void enumeratePins (bool low_level, pin_info_ptr pin_info, void *data)
 
 #endif
 
-#if DRIVER_SPINDLE_PWM_ENABLE
+#if !(AUX_CONTROLS & AUX_CONTROL_SPINDLE)
+
     pin.pin = SPINDLE_PWM_PIN;
     pin.function = Output_SpindlePWM;
     pin.group = PinGroup_SpindlePWM;
     pin.port = low_level ? (void *)SPINDLE_PWM_PORT : (void *)port2char(SPINDLE_PWM_PORT);
     pin.description = NULL;
     pin_info(&pin, data);
+
 #endif
 }
 
@@ -1677,7 +1714,7 @@ static bool driver_setup (settings_t *settings)
 
  // Spindle init
 
-#if DRIVER_SPINDLE_PWM_ENABLE
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 
     SPINDLE_PWM_CLOCK_ENA();
 
@@ -1689,7 +1726,7 @@ static bool driver_setup (settings_t *settings)
     GPIO_Init.Mode = GPIO_MODE_AF_PP;
     HAL_GPIO_Init(SPINDLE_PWM_PORT, &GPIO_Init);
 
-#endif // DRIVER_SPINDLE_PWM_ENABLE
+#endif // DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 
  // Coolant init (??)
 
@@ -1766,7 +1803,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "241208";
+    hal.driver_version = "241217";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -1805,15 +1842,15 @@ bool driver_init (void)
 
 #if DRIVER_SPINDLE_ENABLE
 
- #if DRIVER_SPINDLE_PWM_ENABLE
+ #if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 
     static const spindle_ptrs_t spindle = {
         .type = SpindleType_PWM,
-#if DRIVER_SPINDLE_DIR_ENABLE
+  #if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
         .ref_id = SPINDLE_PWM0,
-#else
+  #else
         .ref_id = SPINDLE_PWM0_NODIR,
-#endif
+  #endif
         .config = spindleConfig,
         .set_state = spindleSetStateVariable,
         .get_state = spindleGetState,
@@ -1824,7 +1861,7 @@ bool driver_init (void)
             .variable = On,
             .laser = On,
             .pwm_invert = On,
-  #if DRIVER_SPINDLE_DIR_ENABLE
+  #if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
             .direction = On
   #endif
         }
@@ -1834,16 +1871,16 @@ bool driver_init (void)
 
     static const spindle_ptrs_t spindle = {
         .type = SpindleType_Basic,
-#if DRIVER_SPINDLE_DIR_ENABLE
+  #if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
         .ref_id = SPINDLE_ONOFF0_DIR,
-#else
+  #else
         .ref_id = SPINDLE_ONOFF0,
-#endif
+  #endif
         .set_state = spindleSetState,
         .get_state = spindleGetState,
         .cap = {
             .gpio_controlled = On,
-  #if DRIVER_SPINDLE_DIR_ENABLE
+  #if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
             .direction = On
   #endif
         }
@@ -1898,7 +1935,7 @@ bool driver_init (void)
     hal.nvs.type = NVS_None;
 #endif
 
-  // driver capabilities, used for announcing and negotiating (with Grbl) driver functionality
+  // driver capabilities
 
 #if ESTOP_ENABLE
     hal.signals_cap.e_stop = On;
@@ -1909,12 +1946,7 @@ bool driver_init (void)
 #endif
     hal.limits_cap = get_limits_cap();
     hal.home_cap = get_home_cap();
-#ifdef COOLANT_FLOOD_PIN
-    hal.coolant_cap.flood = On;
-#endif
-#ifdef COOLANT_MIST_PIN
-    hal.coolant_cap.mist = On;
-#endif
+    hal.coolant_cap.bits = COOLANT_ENABLE;
     hal.driver_cap.software_debounce = On;
     hal.driver_cap.step_pulse_delay = On;
     hal.driver_cap.amass_level = 3;
@@ -1963,10 +1995,10 @@ bool driver_init (void)
             limit_inputs.n_pins++;
         } else if(input->group == PinGroup_Control && (CONTROL_MASK & input->bit)) {
             pin_irq[__builtin_ffs(input->bit) - 1] = input;
-#if xSAFETY_DOOR_ENABLE
+  #if xSAFETY_DOOR_ENABLE
             if(input->id == Input_SafetyDoor)
                 input->mode.debounce = hal.driver_cap.software_debounce;
-#endif
+  #endif
         }
     }
 
@@ -1978,7 +2010,11 @@ bool driver_init (void)
         if(output->group == PinGroup_AuxOutput) {
             if(aux_outputs.pins.outputs == NULL)
                 aux_outputs.pins.outputs = output;
-            output->id = (pin_function_t)(Output_Aux0 + aux_outputs.n_pins++);
+            output->id = (pin_function_t)(Output_Aux0 + aux_outputs.n_pins);
+  #if AUX_CONTROLS
+            aux_out_remap_explicit(output->port, output->pin, aux_outputs.n_pins, output);
+  #endif
+            aux_outputs.n_pins++;
         }
     }
 
@@ -1988,6 +2024,10 @@ bool driver_init (void)
     aux_ctrl_claim_ports(aux_claim_explicit, NULL);
   #elif defined(SAFETY_DOOR_PIN)
     hal.signals_cap.safety_door = On;
+  #endif
+
+  #if AUX_CONTROLS
+    aux_ctrl_claim_out_ports(aux_out_claim_explicit, NULL);
   #endif
 
 #else
@@ -2158,7 +2198,7 @@ static inline void aux_pin_irq (uint32_t bit)
     }
 }
 
-#endif
+#endif // AUXINPUT_MASK
 
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<0)
 

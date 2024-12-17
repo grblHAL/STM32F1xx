@@ -63,37 +63,41 @@
 #define M3_LIMIT_PIN            15
 #endif
 
-// Define driver spindle pins
-
-#if DRIVER_SPINDLE_PWM_ENABLE
-#define SPINDLE_PWM_PORT_BASE   GPIOA_BASE
-#define SPINDLE_PWM_PIN         8
-#elif defined(HAS_IOPORTS)
-#define AUXOUTPUT0_PORT         GPIOA
+#define AUXOUTPUT0_PORT         GPIOA // Spindle PWM
 #define AUXOUTPUT0_PIN          8
-#endif
-
-#if DRIVER_SPINDLE_DIR_ENABLE
-#define SPINDLE_DIRECTION_PORT  GPIOB
-#define SPINDLE_DIRECTION_PIN   0
-#elif defined(HAS_IOPORTS)
-#define AUXOUTPUT1_PORT         GPIOB
+#define AUXOUTPUT1_PORT         GPIOB // Spindle direction
 #define AUXOUTPUT1_PIN          0
-#endif
-
-#if DRIVER_SPINDLE_ENABLE
-#define SPINDLE_ENABLE_PORT     GPIOB
-#define SPINDLE_ENABLE_PIN      1
-#elif defined(HAS_IOPORTS)
-#define AUXOUTPUT2_PORT         GPIOB
+#define AUXOUTPUT2_PORT         GPIOB // Spindle enable
 #define AUXOUTPUT2_PIN          1
+#define AUXOUTPUT3_PORT         GPIOB // Coolant flood
+#define AUXOUTPUT3_PIN          4
+#define AUXOUTPUT4_PORT         GPIOB // Coolant mist
+#define AUXOUTPUT4_PIN          3
+
+// Define driver spindle pins
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_ENA
+#define SPINDLE_ENABLE_PORT     AUXOUTPUT2_PORT
+#define SPINDLE_ENABLE_PIN      AUXOUTPUT2_PIN
+#endif
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
+#define SPINDLE_PWM_PORT_BASE   GPIOA_BASE
+#define SPINDLE_PWM_PORT        AUXOUTPUT0_PORT
+#define SPINDLE_PWM_PIN         AUXOUTPUT0_PIN
+#endif
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
+#define SPINDLE_DIRECTION_PORT  AUXOUTPUT1_PORT
+#define SPINDLE_DIRECTION_PIN   AUXOUTPUT1_PIN
 #endif
 
 // Define flood and mist coolant enable output pins.
-#define COOLANT_FLOOD_PORT      GPIOB
-#define COOLANT_FLOOD_PIN       4
-#define COOLANT_MIST_PORT       GPIOB
-#define COOLANT_MIST_PIN        3
+#if COOLANT_ENABLE & COOLANT_FLOOD
+#define COOLANT_FLOOD_PORT      AUXOUTPUT3_PORT
+#define COOLANT_FLOOD_PIN       AUXOUTPUT3_PIN
+#endif
+#if COOLANT_ENABLE & COOLANT_MIST
+#define COOLANT_MIST_PORT       AUXOUTPUT4_PORT
+#define COOLANT_MIST_PIN        AUXOUTPUT4_PIN
+#endif
 
 // Define user-control controls (cycle start, reset, feed hold) input pins.
 #define CONTROL_PORT            GPIOB

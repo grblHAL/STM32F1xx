@@ -188,7 +188,9 @@
 #define SPINDLE_PWM_CR2_OIS         timerCR2OIS(SPINDLE_PWM_TIMER_CH, )
 #endif
 
+#ifndef SPINDLE_PWM_PORT
 #define SPINDLE_PWM_PORT            ((GPIO_TypeDef *)SPINDLE_PWM_PORT_BASE)
+#endif
 #define SPINDLE_PWM_CLOCK_ENA       timerCLKENA(SPINDLE_PWM_TIMER_N)
 
 #endif // SPINDLE_PWM_PORT_BASE
