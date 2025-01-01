@@ -15,6 +15,7 @@ build_flags =
   -I USB_DEVICE/Target
   -D OVERRIDE_MY_MACHINE
 lib_deps =
+  boards
   bluetooth
   grbl
   keypad
