@@ -48,4 +48,5 @@ build_flags = ${common.build_flags}
 %build_flags%
 lib_deps = ${common.lib_deps}
   eeprom
+%lib_deps%
 lib_extra_dirs = ${common.lib_extra_dirs}
