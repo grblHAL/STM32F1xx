@@ -307,9 +307,9 @@ static probe_state_t probe = {
 };
 #endif // PROBE_PIN
 
-#if I2C_STROBE_BIT || SPI_IRQ_BIT
+#if defined(I2C_STROBE_PIN) || SPI_IRQ_BIT
 
-#if I2C_STROBE_BIT
+#if defined(I2C_STROBE_PIN)
 static driver_irq_handler_t i2c_strobe = { .type = IRQ_I2C_Strobe };
 #endif
 
@@ -323,14 +323,14 @@ static bool irq_claim (irq_type_t irq, uint_fast8_t id, irq_callback_ptr handler
 
     switch(irq) {
 
-#if I2C_STROBE_BIT
+#if defined(I2C_STROBE_PIN)
         case IRQ_I2C_Strobe:
             if((ok = i2c_strobe.callback == NULL))
                 i2c_strobe.callback = handler;
             break;
 #endif
 
-#ifdef SPI_IRQ_BIT
+#if SPI_IRQ_BIT
         case IRQ_SPI:
             if((ok = spi_irq.callback == NULL))
                 spi_irq.callback = handler;
@@ -344,7 +344,7 @@ static bool irq_claim (irq_type_t irq, uint_fast8_t id, irq_callback_ptr handler
     return ok;
 }
 
-#endif // I2C_STROBE_BIT || SPI_IRQ_BIT
+#endif // defined(I2C_STROBE_PIN) || SPI_IRQ_BIT
 
 
 void disk_timerproc (void);
@@ -1803,7 +1803,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "241217";
+    hal.driver_version = "250120";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
