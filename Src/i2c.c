@@ -76,50 +76,47 @@ void I2C2_ER_IRQHandler(void)
 }
 #endif
 
-bool i2c_probe (uint_fast16_t i2cAddr)
+static inline __attribute__((always_inline)) bool wait_ready (void)
 {
-    //wait for bus to be ready
-    while (HAL_I2C_GetState(&i2c_port) != HAL_I2C_STATE_READY) {
+    while(i2c_port.State != HAL_I2C_STATE_READY) {
         if(!hal.stream_blocking_callback())
             return false;
     }
 
-    return HAL_I2C_IsDeviceReady(&i2c_port, i2cAddr << 1, 4, 10) == HAL_OK;
+    return true;
 }
 
-void i2c_get_keycode (uint_fast16_t i2cAddr, keycode_callback_ptr callback)
+bool i2c_probe (i2c_address_t i2cAddr)
 {
-    keycode = 0;
-    keypad_callback = callback;
-
-    HAL_StatusTypeDef ret = HAL_I2C_Master_Receive_IT(&i2c_port, i2cAddr << 1, &keycode, 1);
-
-    if(!ret)
-        ret = HAL_I2C_Master_Receive_IT(&i2c_port, i2cAddr << 1, &keycode, 1);
+    return wait_ready() && HAL_I2C_IsDeviceReady(&i2c_port, i2cAddr << 1, 4, 10) == HAL_OK;
 }
 
-#if EEPROM_ENABLE
-
-nvs_transfer_result_t i2c_nvs_transfer (nvs_transfer_t *i2c, bool read)
+bool i2c_get_keycode (i2c_address_t i2cAddr, keycode_callback_ptr callback)
 {
-    while (HAL_I2C_GetState(&i2c_port) != HAL_I2C_STATE_READY);
+    bool ok;
 
-//    while (HAL_I2C_IsDeviceReady(&i2c_port, (uint16_t)(0xA0), 3, 100) != HAL_OK);
+    if((ok = wait_ready() && HAL_I2C_Master_Receive_IT(&i2c_port, i2cAddr << 1, &keycode, 1) == HAL_OK)) {
+        keycode = 0;
+        keypad_callback = callback;
+    }
+
+    return ok;
+}
+
+bool i2c_transfer (i2c_transfer_t *i2c, bool read)
+{
+    if(!wait_ready())
+        return false;
+
+    HAL_StatusTypeDef ret;
 
     if(read)
-        HAL_I2C_Mem_Read(&i2c_port, i2c->address << 1, i2c->word_addr, i2c->word_addr_bytes == 1 ? I2C_MEMADD_SIZE_8BIT : I2C_MEMADD_SIZE_16BIT, i2c->data, i2c->count, 100);
-    else {
-        HAL_I2C_Mem_Write(&i2c_port, i2c->address << 1, i2c->word_addr, i2c->word_addr_bytes == 1 ? I2C_MEMADD_SIZE_8BIT : I2C_MEMADD_SIZE_16BIT, i2c->data, i2c->count, 100);
-#if !EEPROM_IS_FRAM
-        hal.delay_ms(7, NULL);
-#endif
-    }
-    i2c->data += i2c->count;
+        ret = HAL_I2C_Mem_Read(&i2c_port, i2c->address << 1, i2c->word_addr, i2c->word_addr_bytes == 1 ? I2C_MEMADD_SIZE_8BIT : I2C_MEMADD_SIZE_16BIT, i2c->data, i2c->count, 100);
+    else
+        ret = HAL_I2C_Mem_Write(&i2c_port, i2c->address << 1, i2c->word_addr, i2c->word_addr_bytes == 1 ? I2C_MEMADD_SIZE_8BIT : I2C_MEMADD_SIZE_16BIT, i2c->data, i2c->count, 100);
 
-    return NVS_TransferResult_OK;
+    return ret == HAL_OK;;
 }
-
-#endif
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
@@ -183,8 +180,13 @@ TMC_spi_status_t tmc_spi_write (trinamic_motor_t driver, TMC_spi_datagram_t *reg
 
 #endif
 
-void i2c_init (void)
+i2c_cap_t i2c_start (void)
 {
+    static i2c_cap_t cap = {};
+
+    if(cap.started)
+        return cap;
+
 #if I2C_PORT == 1
     GPIO_InitTypeDef GPIO_InitStruct = {
         .Pin = GPIO_PIN_6|GPIO_PIN_7, // SCL|SDA
@@ -219,6 +221,10 @@ void i2c_init (void)
     HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
     HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
 #endif
+
+    cap.started = On;
+
+    return cap;
 }
 
-#endif
+#endif // I2C_ENABLE

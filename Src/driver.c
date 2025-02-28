@@ -1792,10 +1792,6 @@ bool driver_init (void)
 
     // GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE); // ??? Disable JTAG and SWD!?? Bug?
 
-#ifdef I2C_PORT
-    i2c_init();
-#endif
-
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
 #ifndef STM32F103xB
@@ -1803,7 +1799,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "250120";
+    hal.driver_version = "250228";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
