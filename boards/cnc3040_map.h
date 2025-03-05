@@ -17,7 +17,7 @@
   along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if N_ABC_MOTORS > 2 || N_GANGED
+#if N_ABC_MOTORS > 2 || N_AUTO_SQUARED
 #error Axis configuration is not supported!
 #endif
 
