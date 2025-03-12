@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2019-2024 Terje Io
+  Copyright (c) 2019-2025 Terje Io
 
   grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -285,7 +285,6 @@ static pin_group_pins_t limit_inputs = {0};
 static axes_signals_t next_step_outbits;
 static delay_t delay = { .ms = 1, .callback = NULL }; // NOTE: initial ms set to 1 for "resetting" systick timer on startup
 static input_signal_t *pin_irq[16] = {0};
-static on_unknown_sys_command_ptr on_unknown_sys_command;
 #ifndef STM32F103xB
 static periph_signal_t *periph_pins = NULL;
 #endif
@@ -1069,12 +1068,12 @@ static void spindleSetSpeed (spindle_ptrs_t *spindle, uint_fast16_t pwm_value)
         }
         if(spindle->context.pwm->flags.always_on) {
             SPINDLE_PWM_TIMER_CCR = spindle->context.pwm->off_value;
-#if SPINDLE_PWM_TIMER_N == 1
+#if SPINDLE_PWM_TIMER_N == 1 || SPINDLE_PWM_TIMER_N == 8
             SPINDLE_PWM_TIMER->BDTR |= TIM_BDTR_MOE;
 #endif
             SPINDLE_PWM_TIMER_CCR = pwm_value;
         } else
-#if SPINDLE_PWM_TIMER_N == 1
+#if SPINDLE_PWM_TIMER_N == 1 || SPINDLE_PWM_TIMER_N == 8
             SPINDLE_PWM_TIMER->BDTR &= ~TIM_BDTR_MOE; // Set PWM output low
 #else
             SPINDLE_PWM_TIMER_CCR = 0;
@@ -1088,7 +1087,7 @@ static void spindleSetSpeed (spindle_ptrs_t *spindle, uint_fast16_t pwm_value)
             pwmEnabled = true;
         }
         SPINDLE_PWM_TIMER_CCR = pwm_value;
-#if SPINDLE_PWM_TIMER_N == 1
+#if SPINDLE_PWM_TIMER_N == 1 || SPINDLE_PWM_TIMER_N == 8
         SPINDLE_PWM_TIMER->BDTR |= TIM_BDTR_MOE;
 #endif
     }
@@ -1150,7 +1149,7 @@ bool spindleConfig (spindle_ptrs_t *spindle)
         SPINDLE_PWM_TIMER_CCMR &= ~SPINDLE_PWM_CCMR_OCM_CLR;
         SPINDLE_PWM_TIMER_CCMR |= SPINDLE_PWM_CCMR_OCM_SET;
         SPINDLE_PWM_TIMER_CCR = 0;
-#if SPINDLE_PWM_TIMER_N == 1
+#if SPINDLE_PWM_TIMER_N == 1 || SPINDLE_PWM_TIMER_N == 8
         SPINDLE_PWM_TIMER->BDTR |= TIM_BDTR_OSSR|TIM_BDTR_OSSI;
 #endif
         if(settings.pwm_spindle.invert.pwm) {
@@ -1645,18 +1644,17 @@ void setPeriphPinDescription (const pin_function_t function, const pin_group_t g
 
 #endif
 
-static status_code_t jtag_enable (uint_fast16_t state, char *line)
+static status_code_t jtag_enable (sys_state_t state, char *args)
 {
-    if(!strcmp(line, "$PGM")) {
-        __HAL_AFIO_REMAP_SWJ_ENABLE();
-        on_unknown_sys_command = NULL;
-        return Status_OK;
-    }
+    report_message("Reenabled JTAG/SWD", Message_Warning);
+    hal.delay_ms(100, NULL);
 
-    return on_unknown_sys_command ? on_unknown_sys_command(state, line) : Status_Unhandled;
+    __HAL_AFIO_REMAP_SWJ_ENABLE();
+
+    return Status_OK;
 }
 
-// Initializes MCU peripherals for Grbl use
+// Initializes MCU peripherals for grblHAL use
 static bool driver_setup (settings_t *settings)
 {
   //    Interrupt_disableSleepOnIsrExit();
@@ -1746,9 +1744,6 @@ static bool driver_setup (settings_t *settings)
 
 #endif
 
-    on_unknown_sys_command = grbl.on_unknown_sys_command;
-    grbl.on_unknown_sys_command = jtag_enable;
-
     IOInitDone = settings->version.id == 23;
 
     hal.settings_changed(settings, (settings_changed_flags_t){0});
@@ -1799,7 +1794,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "250228";
+    hal.driver_version = "250312";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -2056,6 +2051,17 @@ bool driver_init (void)
 #ifdef HAS_BOARD_INIT
     board_init();
 #endif
+
+    static const sys_command_t boot_command_list[] = {
+        {"PGM", jtag_enable, { .allow_blocking = On, .noargs = On }, { .str = "reenable JTAG/SWD" } },
+    };
+
+    static sys_commands_t boot_commands = {
+        .n_commands = sizeof(boot_command_list) / sizeof(sys_command_t),
+        .commands = boot_command_list
+    };
+
+    system_register_commands(&boot_commands);
 
 #include "grbl/plugins_init.h"
 

@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2019-2024 Terje Io
+  Copyright (c) 2019-2025 Terje Io
 
   grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -127,17 +127,17 @@
 #ifdef SPINDLE_PWM_PORT_BASE
 
 #if SPINDLE_PWM_PORT_BASE == GPIOA_BASE
-  #if SPINDLE_PWM_PIN == 1
-   #ifdef STM32F103xE // PA1 - TIM5_CH2
+  #if SPINDLE_PWM_PIN == 1 // PA1
+   #ifdef STM32F103xE      // - TIM5_CH2
     #define SPINDLE_PWM_TIMER_N     5
     #define SPINDLE_PWM_TIMER_CH    2
     #define SPINDLE_PWM_TIMER_INV   0
     #define SPINDLE_PWM_AF_REMAP    0
-   #else // PA1 - TIM2_CH2
-    #define SPINDLE_PWM_TIMER_N 2
-    #define SPINDLE_PWM_TIMER_CH 2
-    #define SPINDLE_PWM_TIMER_INV 0
-    #define SPINDLE_PWM_AF_REMAP 0
+   #else                   // - TIM2_CH2
+    #define SPINDLE_PWM_TIMER_N     2
+    #define SPINDLE_PWM_TIMER_CH    2
+    #define SPINDLE_PWM_TIMER_INV   0
+    #define SPINDLE_PWM_AF_REMAP    0
    #endif
   #elif SPINDLE_PWM_PIN == 8 // PA8 - TIM1_CH1
     #define SPINDLE_PWM_TIMER_N     1
@@ -161,6 +161,20 @@
     #define SPINDLE_PWM_TIMER_CH    4
     #define SPINDLE_PWM_TIMER_INV   0
     #define SPINDLE_PWM_AF_REMAP    0
+  #endif
+#elif SPINDLE_PWM_PORT_BASE == GPIOC_BASE
+  #if SPINDLE_PWM_PIN == 9 // PC9
+   #ifdef STM32F103xE     // - TIM8_CH4
+    #define SPINDLE_PWM_TIMER_N     8
+    #define SPINDLE_PWM_TIMER_CH    4
+    #define SPINDLE_PWM_TIMER_INV   0
+    #define SPINDLE_PWM_AF_REMAP    0
+   #else                   // - TIM3_CH4
+    #define SPINDLE_PWM_TIMER_N     3
+    #define SPINDLE_PWM_TIMER_CH    4
+    #define SPINDLE_PWM_TIMER_INV   0
+    #define SPINDLE_PWM_AF_REMAP    0b11
+   #endif
   #endif
 #endif
 
@@ -195,7 +209,7 @@
 
 #endif // SPINDLE_PWM_PORT_BASE
 
-#if SPINDLE_PWM_TIMER_CH == 2
+#if SPINDLE_PWM_TIMER_N == 2
 #define STEPPER_TIMER_N 1
 #else
 #define STEPPER_TIMER_N 2
@@ -210,7 +224,11 @@
 #define STEPPER_TIMER_IRQHandler    timerHANDLER(STEPPER_TIMER_N)
 #endif
 
+#if SPINDLE_PWM_TIMER_N == 3
+#define PULSE_TIMER_N               4
+#else
 #define PULSE_TIMER_N               3
+#endif
 #define PULSE_TIMER                 timer(PULSE_TIMER_N)
 #define PULSE_TIMER_CLKEN           timerCLKENA(PULSE_TIMER_N)
 #define PULSE_TIMER_IRQn            timerINT(PULSE_TIMER_N)
