@@ -116,8 +116,8 @@
   #include "boards/svm_map.h"
 #elif defined(BOARD_SUPERGERBIL)
   #include "boards/supergerbil_map.h"
-#elif defined(BOARD_CREALITY_V2_2_2) || defined(BOARD_CREALITY_V2_2_7)
-  #include "boards/creality_v2.2.x_map.h"
+#elif defined(BOARD_CREALITY_V4_2_2) || defined(BOARD_CREALITY_V4_2_7)
+  #include "boards/creality_v4.2.x_map.h"
 #elif defined(BOARD_MY_MACHINE)
   #include "boards/my_machine_map.h"
 #else // default board
@@ -239,6 +239,9 @@
 // NOTE: step output mode, number of axes and compiler optimization settings may all affect this value.
 #ifndef STEP_PULSE_LATENCY
 #define STEP_PULSE_LATENCY 1.0f // microseconds
+#endif
+#ifndef STEP_PULSE_OFF_TIME_MIN
+#define STEP_PULSE_OFF_TIME_MIN 6 // x 100 ns, add stepper IRQ latency
 #endif
 
 // End configuration

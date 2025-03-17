@@ -3,7 +3,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2020-2024 Terje Io
+  Copyright (c) 2020-2025 Terje Io
 
   grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@
 //#define BOARD_BTT_SKR_MINI_E3_V20
 //#define BOARD_BTT_SKR_MINI_E3_V20_ALT2
 //#define BOARD_SVM
-//#define BOARD_CREALITY_V2_2_2 // Not tested!
-//#define BOARD_CREALITY_V2_2_7 // Not tested!
+//#define BOARD_CREALITY_V4_2_2 // Not tested!
+//#define BOARD_CREALITY_V4_2_7 // Not tested!
 //#define BOARD_MY_MACHINE // Add my_machine_map.h before enabling this!
 
 // Configuration
@@ -43,6 +43,7 @@
                                     // 2: Mode switching is by the CMD_MPG_MODE_TOGGLE (0x8B) command character.
 //#define KEYPAD_ENABLE           1 // 1: uses a I2C keypad for input.
                                     // 2: uses a serial stream for input. If MPG_ENABLE is set > 0 the serial stream is shared with the MPG.
+//#define DISPLAY_ENABLE          1 // Set to 9 for I2C display protocol, 17 for I2C LED protocol. Other options may be available via plugins.
 //#define ODOMETER_ENABLE         1 // Odometer plugin.
 //#define TRINAMIC_ENABLE      2130 // Trinamic TMC2130 stepper driver support. NOTE: work in progress.
 //#define TRINAMIC_ENABLE      5160 // Trinamic TMC5160 stepper driver support. NOTE: work in progress.
