@@ -1,5 +1,5 @@
 /*
-  creality_v2.2.x_map.h - driver code for STM32F103RC ARM processors
+  creality_v4.2.x_map.h - driver code for STM32F103RC ARM processors
 
   Part of grblHAL
 
@@ -26,9 +26,9 @@
 #endif
 
 #ifdef BOARD_CREALITY_V4_2_7
-#define BOARD_NAME "Creality v2.2.7"
+#define BOARD_NAME "Creality v4.2.7"
 #else
-#define BOARD_NAME "Creality v2.2.2"
+#define BOARD_NAME "Creality v4.2.2"
 #endif
 
 //#define I2C_PORT        1 ??
