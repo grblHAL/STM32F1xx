@@ -22,6 +22,7 @@
 */
 
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +83,8 @@
 #if DRIVER_IRQMASK != (LIMIT_MASK_SUM+CONTROL_MASK_SUM+DEVICES_IRQ_MASK_SUM)
 #error Interrupt enabled input pins must have unique pin numbers!
 #endif
+
+#define STEPPER_TIMER_DIV 4
 
 #include "grbl/stepdir_map.h"
 
@@ -272,7 +275,7 @@ static void aux_irq_handler (uint8_t port, bool state);
 #endif
 
 extern __IO uint32_t uwTick;
-static uint32_t pulse_length, pulse_delay, aux_irq = 0;
+static uint32_t aux_irq = 0;
 static bool IOInitDone = false;
 #if DRIVER_SPINDLE_ENABLE
 static spindle_id_t spindle_id = -1;
@@ -282,8 +285,20 @@ static bool pwmEnabled = false;
 static spindle_pwm_t spindle_pwm;
 #endif
 static pin_group_pins_t limit_inputs = {0};
-static axes_signals_t next_step_outbits;
 static delay_t delay = { .ms = 1, .callback = NULL }; // NOTE: initial ms set to 1 for "resetting" systick timer on startup
+
+typedef struct {
+    // t_* parameters are timer ticks
+    uint32_t t_min_period;
+    uint32_t t_on; // delayed pulse
+    uint32_t t_off;
+    uint32_t t_on_off_min;
+    uint32_t t_off_min;
+    uint32_t t_dly_off_min;
+} step_pulse_t;
+
+static step_pulse_t step_cfg[3] = {}, *step_pulse;
+static axes_signals_t step_pulse_out;
 static input_signal_t *pin_irq[16] = {0};
 #ifndef STM32F103xB
 static periph_signal_t *periph_pins = NULL;
@@ -395,96 +410,105 @@ static void stepperEnable (axes_signals_t enable, bool hold)
 #endif
 }
 
+// Sets up stepper driver interrupt timeout, "Normal" version
+static void stepperCyclesPerTickPrescaled (uint32_t cycles_per_tick)
+{
+    if(cycles_per_tick < step_pulse->t_min_period)
+        cycles_per_tick = step_pulse->t_min_period;
+
+    // Set timer prescaling for normal step generation
+    if (cycles_per_tick < (1UL << 16)) { // < 65536  (1.1ms @ 72MHz)
+        step_pulse = &step_cfg[0];
+        STEPPER_TIMER->PSC = STEPPER_TIMER_DIV - 1; // DIV 1
+    } else if (cycles_per_tick < (1UL << 18)) { // < 524288 (8.8ms @ 72MHz)
+        step_pulse = &step_cfg[1];
+        STEPPER_TIMER->PSC = (STEPPER_TIMER_DIV << 2) - 1; // DIV 8
+        cycles_per_tick = cycles_per_tick >> 2;
+    } else {
+        if(cycles_per_tick >= (1UL << 20))
+            cycles_per_tick = (1UL << 20) - 1;
+        step_pulse = &step_cfg[2];
+        STEPPER_TIMER->PSC = (STEPPER_TIMER_DIV << 4) - 1; // DIV64
+        cycles_per_tick = cycles_per_tick >> 4;
+    }
+
+    STEPPER_TIMER->ARR = (uint16_t)(cycles_per_tick - 1);
+}
+
 // Starts stepper driver ISR timer and forces a stepper driver interrupt callback
 static void stepperWakeUp (void)
 {
     hal.stepper.enable((axes_signals_t){AXES_BITMASK}, false);
 
-    STEPPER_TIMER->ARR = hal.f_step_timer / 500; // ~2ms delay to allow drivers time to wake up.
+    stepperCyclesPerTickPrescaled(hal.f_step_timer / 500); // ~2ms delay to allow drivers time to wake up.
     STEPPER_TIMER->EGR = TIM_EGR_UG;
-    STEPPER_TIMER->SR = ~TIM_SR_UIF;
+    STEPPER_TIMER->SR = 0;
+    STEPPER_TIMER->DIER = TIM_DIER_UIE;
     STEPPER_TIMER->CR1 |= TIM_CR1_CEN;
 }
 
 // Disables stepper driver interrupts
 static void stepperGoIdle (bool clear_signals)
 {
-    STEPPER_TIMER->CR1 &= ~TIM_CR1_CEN;
-    STEPPER_TIMER->CNT = 0;
-}
-
-// Sets up stepper driver interrupt timeout, "Normal" version
-static void stepperCyclesPerTickPrescaled (uint32_t cycles_per_tick)
-{
-    // Set timer prescaling for normal step generation
-    if (cycles_per_tick < (1UL << 16)) { // < 65536  (1.1ms @ 72MHz)
-        STEPPER_TIMER->PSC = 0; // DIV 1
-    } else if (cycles_per_tick < (1UL << 19)) { // < 524288 (8.8ms @ 72MHz)
-        STEPPER_TIMER->PSC = 7; // DIV 8
-        cycles_per_tick = cycles_per_tick >> 3;
-    } else {
-        STEPPER_TIMER->PSC = 63; // DIV64
-        cycles_per_tick = cycles_per_tick >> 6;
-    }
-    STEPPER_TIMER->ARR = (uint16_t)(cycles_per_tick - 1);
+    STEPPER_TIMER->DIER &= ~TIM_DIER_UIE;
 }
 
 // Set stepper pulse output pins
-// NOTE: step_outbits are: bit0 -> X, bit1 -> Y, bit2 -> Z...
+// NOTE: step_out are: bit0 -> X, bit1 -> Y, bit2 -> Z...
 #ifdef SQUARING_ENABLED
 
-inline static __attribute__((always_inline)) void stepperSetStepOutputs (axes_signals_t step_outbits_1)
+inline static __attribute__((always_inline)) void stepper_step_out (axes_signals_t step_out_1)
 {
-    axes_signals_t step_outbits_2;
-    step_outbits_2.mask = (step_outbits_1.mask & motors_2.mask) ^ settings.steppers.step_invert.mask;
+    axes_signals_t step_out_2;
+    step_out_2.mask = (step_out_1.mask & motors_2.mask) ^ settings.steppers.step_invert.mask;
 
 #if STEP_OUTMODE == GPIO_BITBAND
-    step_outbits_1.mask = (step_outbits_1.mask & motors_1.mask) ^ settings.steppers.step_invert.mask;
+    step_out_1.mask = (step_out_1.mask & motors_1.mask) ^ settings.steppers.step_invert.mask;
 
-    DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, step_outbits_1.x);
+    DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, step_out_1.x);
  #ifdef X2_STEP_PIN
-    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_outbits_2.x);
+    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_out_2.x);
  #endif
-    DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, step_outbits_1.y);
+    DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, step_out_1.y);
  #ifdef Y2_STEP_PIN
-    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_outbits_2.y);
+    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_out_2.y);
  #endif
-    DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, step_outbits_1.z);
+    DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, step_out_1.z);
  #ifdef Z2_STEP_PIN
-    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_outbits_2.z);
+    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_out_2.z);
  #endif
  #ifdef A_AXIS
-    DIGITAL_OUT(A_STEP_PORT, A_STEP_PIN, step_outbits_1.a);
+    DIGITAL_OUT(A_STEP_PORT, A_STEP_PIN, step_out_1.a);
  #endif
  #ifdef B_AXIS
-    DIGITAL_OUT(B_STEP_PORT, B_STEP_PIN, step_outbits_1.b);
+    DIGITAL_OUT(B_STEP_PORT, B_STEP_PIN, step_out_1.b);
  #endif
  #ifdef C_AXIS
-    DIGITAL_OUT(C_STEP_PORT, C_STEP_PIN, step_outbits_1.c);
+    DIGITAL_OUT(C_STEP_PORT, C_STEP_PIN, step_out_1.c);
  #endif
 
 #elif STEP_OUTMODE == GPIO_MAP
-    STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[step_outbits_1.value & motors_1.mask];
+    STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[step_out_1.value & motors_1.mask];
  #ifdef X2_STEP_PIN
-    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_outbits_2.x);
+    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_out_2.x);
  #endif
  #ifdef Y2_STEP_PIN
-    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_outbits_2.y);
+    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_out_2.y);
  #endif
  #ifdef Z2_STEP_PIN
-    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_outbits_2.z);
+    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_out_2.z);
  #endif
 
 #else // STEP_OUTMODE == GPIO_SHIFTx
-    STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | (((step_outbits_1.mask & motors_1.mask) ^ settings.steppers.step_invert.mask) << STEP_OUTMODE);
+    STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | (((step_out_1.mask & motors_1.mask) ^ settings.steppers.step_invert.mask) << STEP_OUTMODE);
  #ifdef X2_STEP_PIN
-    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_outbits_2.x);
+    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_out_2.x);
  #endif
  #ifdef Y2_STEP_PIN
-    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_outbits_2.y);
+    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_out_2.y);
  #endif
  #ifdef Z2_STEP_PIN
-    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_outbits_2.z);
+    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_out_2.z);
  #endif
 #endif
 }
@@ -498,57 +522,57 @@ static void StepperDisableMotors (axes_signals_t axes, squaring_mode_t mode)
 
 #else // SQUARING DISABLED
 
-inline static __attribute__((always_inline)) void stepperSetStepOutputs (axes_signals_t step_outbits)
+inline static __attribute__((always_inline)) void stepper_step_out (axes_signals_t step_out)
 {
 #if STEP_OUTMODE == GPIO_BITBAND
-    step_outbits.mask ^= settings.steppers.step_invert.mask;
-    DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, step_outbits.x);
+    step_out.mask ^= settings.steppers.step_invert.mask;
+    DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, step_out.x);
   #ifdef X2_STEP_PIN
-    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_outbits.x);
+    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_out.x);
   #endif
-    DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, step_outbits.y);
+    DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, step_out.y);
   #ifdef Y2_STEP_PIN
-    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_outbits.y);
+    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_out.y);
   #endif
-    DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, step_outbits.z);
+    DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, step_out.z);
   #ifdef Z2_STEP_PIN
-    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_outbits.z);
+    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_out.z);
   #endif
   #ifdef A_AXIS
-    DIGITAL_OUT(A_STEP_PORT, A_STEP_PIN, step_outbits.a);
+    DIGITAL_OUT(A_STEP_PORT, A_STEP_PIN, step_out.a);
   #endif
   #ifdef B_AXIS
-    DIGITAL_OUT(B_STEP_PORT, B_STEP_PIN, step_outbits.b);
+    DIGITAL_OUT(B_STEP_PORT, B_STEP_PIN, step_out.b);
   #endif
   #ifdef C_AXIS
-    DIGITAL_OUT(C_STEP_PORT, C_STEP_PIN, step_outbits.c);
+    DIGITAL_OUT(C_STEP_PORT, C_STEP_PIN, step_out.c);
   #endif
 #elif STEP_OUTMODE == GPIO_MAP
-    STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[step_outbits.value];
+    STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[step_out.value];
   #ifdef X2_STEP_PIN
-    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_outbits.x ^ settings.steppers.step_invert.x);
+    DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_out.x ^ settings.steppers.step_invert.x);
   #endif
   #ifdef Y2_STEP_PIN
-    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_outbits.y ^ settings.steppers.step_invert.y);
+    DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_out.y ^ settings.steppers.step_invert.y);
   #endif
   #ifdef Z2_STEP_PIN
-    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_outbits.z ^ settings.steppers.step_invert.z);
+    DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_out.z ^ settings.steppers.step_invert.z);
   #endif
 #else // STEP_OUTMODE == GPIO_SHIFTx
  #if N_GANGED
-   step_outbits.mask ^= settings.steppers.step_invert.mask;
-   STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | (step_outbits.mask << STEP_OUTMODE);
+   step_out.mask ^= settings.steppers.step_invert.mask;
+   STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | (step_out.mask << STEP_OUTMODE);
   #ifdef X2_STEP_PIN
-   DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_outbits.x);
+   DIGITAL_OUT(X2_STEP_PORT, X2_STEP_PIN, step_out.x);
   #endif
   #ifdef Y2_PIN
-   DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_outbits.y);
+   DIGITAL_OUT(Y2_STEP_PORT, Y2_STEP_PIN, step_out.y);
   #endif
   #ifdef Z2_STEP_PIN
-   DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_outbits.z);
+   DIGITAL_OUT(Z2_STEP_PORT, Z2_STEP_PIN, step_out.z);
   #endif
  #else
-   STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | ((step_outbits.value << STEP_OUTMODE) ^ settings.steppers.step_invert.value);
+   STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | ((step_out.value << STEP_OUTMODE) ^ settings.steppers.step_invert.value);
  #endif
 #endif
 }
@@ -593,102 +617,127 @@ static axes_signals_t getGangedAxes (bool auto_squared)
 #endif
 
 // Set stepper direction output pins
-// NOTE: see note for stepperSetStepOutputs()
-inline static __attribute__((always_inline)) void stepperSetDirOutputs (axes_signals_t dir_outbits)
+// NOTE: see note for stepper_step_out()
+inline static __attribute__((always_inline)) void stepper_dir_out (axes_signals_t dir_out)
 {
 #if DIRECTION_OUTMODE == GPIO_BITBAND
-    dir_outbits.mask ^= settings.steppers.dir_invert.mask;
-    DIGITAL_OUT(X_DIRECTION_PORT, X_DIRECTION_PIN, dir_outbits.x);
-    DIGITAL_OUT(Y_DIRECTION_PORT, Y_DIRECTION_PIN, dir_outbits.y);
-    DIGITAL_OUT(Z_DIRECTION_PORT, Z_DIRECTION_PIN, dir_outbits.z);
+    dir_out.mask ^= settings.steppers.dir_invert.mask;
+    DIGITAL_OUT(X_DIRECTION_PORT, X_DIRECTION_PIN, dir_out.x);
+    DIGITAL_OUT(Y_DIRECTION_PORT, Y_DIRECTION_PIN, dir_out.y);
+    DIGITAL_OUT(Z_DIRECTION_PORT, Z_DIRECTION_PIN, dir_out.z);
  #ifdef GANGING_ENABLED
-    dir_outbits.mask ^= settings.steppers.ganged_dir_invert.mask;
+    dir_out.mask ^= settings.steppers.ganged_dir_invert.mask;
   #ifdef X2_DIRECTION_PIN
-    DIGITAL_OUT(X2_DIRECTION_PORT, X2_DIRECTION_PIN, dir_outbits.x);
+    DIGITAL_OUT(X2_DIRECTION_PORT, X2_DIRECTION_PIN, dir_out.x);
   #endif
   #ifdef Y2_DIRECTION_PIN
-    DIGITAL_OUT(Y2_DIRECTION_PORT, Y2_DIRECTION_PIN, dir_outbits.y);
+    DIGITAL_OUT(Y2_DIRECTION_PORT, Y2_DIRECTION_PIN, dir_out.y);
   #endif
   #ifdef Z2_DIRECTION_PIN
-    DIGITAL_OUT(Z2_DIRECTION_PORT, Z2_DIRECTION_PIN, dir_outbits.z);
+    DIGITAL_OUT(Z2_DIRECTION_PORT, Z2_DIRECTION_PIN, dir_out.z);
   #endif
  #endif
  #ifdef A_AXIS
-    DIGITAL_OUT(A_DIRECTION_PORT, A_DIRECTION_PIN, dir_outbits.a);
+    DIGITAL_OUT(A_DIRECTION_PORT, A_DIRECTION_PIN, dir_out.a);
  #endif
  #ifdef B_AXIS
-    DIGITAL_OUT(B_DIRECTION_PORT, B_DIRECTION_PIN, dir_outbits.b);
+    DIGITAL_OUT(B_DIRECTION_PORT, B_DIRECTION_PIN, dir_out.b);
  #endif
  #ifdef C_AXIS
-    DIGITAL_OUT(C_DIRECTION_PORT, C_DIRECTION_PIN, dir_outbits.c);
+    DIGITAL_OUT(C_DIRECTION_PORT, C_DIRECTION_PIN, dir_out.c);
  #endif
 #elif DIRECTION_OUTMODE == GPIO_MAP
-    DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | dir_outmap[dir_outbits.value];
+    DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | dir_outmap[dir_out.value];
   #ifdef X2_DIRECTION_PIN
-    DIGITAL_OUT(X2_DIRECTION_PORT, X2_DIRECTION_PIN, (dir_outbits.x ^ settings.steppers.dir_invert.x) ^ settings.steppers.ganged_dir_invert.x);
+    DIGITAL_OUT(X2_DIRECTION_PORT, X2_DIRECTION_PIN, (dir_out.x ^ settings.steppers.dir_invert.x) ^ settings.steppers.ganged_dir_invert.x);
   #endif
   #ifdef Y2_DIRECTION_PIN
-    DIGITAL_OUT(Y2_DIRECTION_PORT, Y2_DIRECTION_PIN, (dir_outbits.y ^ settings.steppers.dir_invert.y) ^ settings.steppers.ganged_dir_invert.y);
+    DIGITAL_OUT(Y2_DIRECTION_PORT, Y2_DIRECTION_PIN, (dir_out.y ^ settings.steppers.dir_invert.y) ^ settings.steppers.ganged_dir_invert.y);
   #endif
   #ifdef Z2_DIRECTION_PIN
-    DIGITAL_OUT(Z2_DIRECTION_PORT, Z2_DIRECTION_PIN, (dir_outbits.z ^ settings.steppers.dir_invert.z) ^ settings.steppers.ganged_dir_invert.z);
+    DIGITAL_OUT(Z2_DIRECTION_PORT, Z2_DIRECTION_PIN, (dir_out.z ^ settings.steppers.dir_invert.z) ^ settings.steppers.ganged_dir_invert.z);
   #endif
 #else // DIRECTION_OUTMODE = SHIFTx
  #ifdef GANGING_ENABLED
-    dir_outbits.mask ^= settings.steppers.dir_invert.mask;
-    DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | (dir_outbits.mask << DIRECTION_OUTMODE);
-    dir_outbits.mask ^= settings.steppers.ganged_dir_invert.mask;
+    dir_out.mask ^= settings.steppers.dir_invert.mask;
+    DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | (dir_out.mask << DIRECTION_OUTMODE);
+    dir_out.mask ^= settings.steppers.ganged_dir_invert.mask;
   #ifdef X2_DIRECTION_PIN
-    DIGITAL_OUT(X2_DIRECTION_PORT, X2_DIRECTION_PIN, dir_outbits.x);
+    DIGITAL_OUT(X2_DIRECTION_PORT, X2_DIRECTION_PIN, dir_out.x);
   #endif
   #ifdef Y2_DIRECTION_PIN
-    DIGITAL_OUT(Y2_DIRECTION_PORT, Y2_DIRECTION_PIN, dir_outbits.y);
+    DIGITAL_OUT(Y2_DIRECTION_PORT, Y2_DIRECTION_PIN, dir_out.y);
   #endif
   #ifdef Z2_DIRECTION_PIN
-    DIGITAL_OUT(Z2_DIRECTION_PORT, Z2_DIRECTION_PIN, dir_outbits.z);
+    DIGITAL_OUT(Z2_DIRECTION_PORT, Z2_DIRECTION_PIN, dir_out.z);
   #endif
  #else
-    DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | ((dir_outbits.mask ^ settings.steppers.dir_invert.mask) << DIRECTION_OUTMODE);
+    DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | ((dir_out.mask ^ settings.steppers.dir_invert.mask) << DIRECTION_OUTMODE);
  #endif
 #endif
+}
+
+static inline __attribute__((always_inline)) void _stepper_step_out (axes_signals_t step_out)
+{
+    stepper_step_out(step_out);
+
+    if((STEPPER_TIMER->SR & TIM_SR_UIF) || STEPPER_TIMER->CNT < step_pulse->t_on_off_min) {
+        STEPPER_TIMER->CNT = step_pulse->t_on_off_min;
+        NVIC_ClearPendingIRQ(STEPPER_TIMER_IRQn);
+    }
+
+    STEPPER_TIMER->CCR1 = STEPPER_TIMER->CNT - step_pulse->t_off;
+    STEPPER_TIMER->SR = 0;
+    STEPPER_TIMER->DIER |= TIM_DIER_CC1IE;
 }
 
 // Sets stepper direction and pulse pins and starts a step pulse.
 static void stepperPulseStart (stepper_t *stepper)
 {
-    if(stepper->dir_change)
-        stepperSetDirOutputs(stepper->dir_outbits);
-
-    if(stepper->step_outbits.value) {
-        stepperSetStepOutputs(stepper->step_outbits);
-        PULSE_TIMER->EGR = TIM_EGR_UG;
-        PULSE_TIMER->CR1 |= TIM_CR1_CEN;
+    if(stepper->dir_changed.bits) {
+        stepper->dir_changed.bits = 0;
+        stepper_dir_out(stepper->dir_out);
     }
+
+    if(stepper->step_out.bits)
+        _stepper_step_out(stepper->step_out);
 }
 
 // Start a stepper pulse, delay version.
 // Note: delay is only added when there is a direction change and a pulse to be output.
 static void stepperPulseStartDelayed (stepper_t *stepper)
 {
-    if(stepper->dir_change) {
+    if(stepper->dir_changed.bits) {
 
-        stepperSetDirOutputs(stepper->dir_outbits);
+        stepper_dir_out(stepper->dir_out);
 
-        if(stepper->step_outbits.value) {
-            next_step_outbits = stepper->step_outbits; // Store out_bits
-            PULSE_TIMER->ARR = pulse_delay;
-            PULSE_TIMER->EGR = TIM_EGR_UG;
-            PULSE_TIMER->CR1 |= TIM_CR1_CEN;
+        if(stepper->step_out.bits) {
+
+            if(stepper->step_out.bits & stepper->dir_changed.bits) {
+
+                step_pulse_out = stepper->step_out; // Store out_bits
+
+                if(STEPPER_TIMER->CNT < step_pulse->t_dly_off_min) {
+                    STEPPER_TIMER->CNT = step_pulse->t_dly_off_min;
+                    NVIC_ClearPendingIRQ(STEPPER_TIMER_IRQn);
+                }
+
+                STEPPER_TIMER->CCR2 = STEPPER_TIMER->CNT - step_pulse->t_on;
+
+                STEPPER_TIMER->SR = 0;
+                STEPPER_TIMER->DIER |= TIM_DIER_CC2IE;
+
+            } else
+                _stepper_step_out(stepper->step_out);
         }
+
+        stepper->dir_changed.bits = 0;
 
         return;
     }
 
-    if(stepper->step_outbits.value) {
-        stepperSetStepOutputs(stepper->step_outbits);
-        PULSE_TIMER->EGR = TIM_EGR_UG;
-        PULSE_TIMER->CR1 |= TIM_CR1_CEN;
-    }
+    if(stepper->step_out.bits)
+        _stepper_step_out(stepper->step_out);
 }
 
 // Enable/disable limit pins interrupt
@@ -709,7 +758,6 @@ static void limitsEnable (bool on, axes_signals_t homing_cycle)
         gpio_irq_enable(limit, disable ? IRQ_Mode_None : limit->mode.irq_mode);
     } while(idx);
 }
-
 
 // Returns limit state as an axes_signals_t variable.
 // Each bitfield bit indicates an axis limit, where triggered is 1 and not triggered is 0.
@@ -1278,8 +1326,8 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
     stepdirmap_init (settings);
 #endif
 
-    stepperSetStepOutputs((axes_signals_t){0});
-    stepperSetDirOutputs((axes_signals_t){0});
+    stepper_step_out((axes_signals_t){0});
+    stepper_dir_out((axes_signals_t){0});
 
 #ifdef SQUARING_ENABLED
     hal.stepper.disable_motors((axes_signals_t){0}, SquaringMode_Both);
@@ -1299,22 +1347,38 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
         }
 #endif // DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 
-        pulse_length = (uint32_t)(10.0f * (settings->steppers.pulse_microseconds - STEP_PULSE_LATENCY)) - 1;
+        float sl = (float)hal.f_step_timer / 1000000.0f;
 
         if(hal.driver_cap.step_pulse_delay && settings->steppers.pulse_delay_microseconds > 0.0f) {
-            pulse_delay = (uint32_t)(10.0f * (settings->steppers.pulse_delay_microseconds - 1.1f));
-            if(pulse_delay < 2)
-                pulse_delay = 2;
-            else if(pulse_delay == pulse_length)
-                pulse_delay++;
-            hal.stepper.pulse_start = &stepperPulseStartDelayed;
+            step_cfg[0].t_on = (uint32_t)ceilf(sl * (max(STEP_PULSE_TOFF_MIN, settings->steppers.pulse_delay_microseconds) - STEP_PULSE_TOFF_LATENCY));
+            hal.stepper.pulse_start = stepperPulseStartDelayed;
         } else {
-            pulse_delay = 0;
-            hal.stepper.pulse_start = &stepperPulseStart;
+            step_cfg[0].t_on = 0;
+            hal.stepper.pulse_start = stepperPulseStart;
         }
 
-        PULSE_TIMER->ARR = pulse_length;
-        PULSE_TIMER->EGR = TIM_EGR_UG;
+        step_pulse = &step_cfg[0];
+
+        step_cfg[0].t_min_period = (uint32_t)ceilf(sl * (settings->steppers.pulse_microseconds + STEP_PULSE_TOFF_MIN));
+        step_cfg[0].t_off = (uint32_t)ceilf(sl * (settings->steppers.pulse_microseconds - STEP_PULSE_TOFF_LATENCY));
+        step_cfg[0].t_off_min = (uint32_t)ceilf(sl * (STEP_PULSE_TOFF_MIN - STEP_PULSE_TON_LATENCY));
+        step_cfg[0].t_off_min = max(step_cfg[0].t_off_min, 5);
+        step_cfg[0].t_on_off_min = step_cfg[0].t_off + step_cfg[0].t_off_min;
+        step_cfg[0].t_dly_off_min = step_cfg[0].t_on + step_cfg[0].t_on_off_min;
+
+        step_cfg[1].t_min_period = step_cfg[0].t_min_period;
+        step_cfg[1].t_off = step_cfg[0].t_off >> 2;
+        step_cfg[1].t_off_min = step_cfg[0].t_off_min >> 2;
+        step_cfg[1].t_off_min = max(step_cfg[0].t_off_min, 5);
+        step_cfg[1].t_on_off_min = step_cfg[0].t_on_off_min >> 2;
+        step_cfg[1].t_dly_off_min = step_cfg[0].t_dly_off_min >> 2;
+
+        step_cfg[2].t_min_period = step_cfg[0].t_min_period;
+        step_cfg[2].t_off = step_cfg[0].t_off >> 4;
+        step_cfg[2].t_off_min = step_cfg[0].t_off_min >> 4;
+        step_cfg[2].t_off_min = max(step_cfg[0].t_off_min, 5);
+        step_cfg[2].t_on_off_min = step_cfg[0].t_on_off_min >> 4;
+        step_cfg[2].t_dly_off_min = step_cfg[0].t_dly_off_min >> 4;
 
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<0)
         HAL_NVIC_DisableIRQ(EXTI0_IRQn);
@@ -1485,43 +1549,43 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
 
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<0)
         if(irq_mask & (1<<0)) {
-            HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 2);
+            HAL_NVIC_SetPriority(EXTI0_IRQn, 2, 0);
             HAL_NVIC_EnableIRQ(EXTI0_IRQn);
         }
 #endif
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<1)
         if(irq_mask & (1<<1)) {
-            HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 2);
+            HAL_NVIC_SetPriority(EXTI1_IRQn, 2, 0);
             HAL_NVIC_EnableIRQ(EXTI1_IRQn);
         }
 #endif
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<2)
         if(irq_mask & (1<<2)) {
-            HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 2);
+            HAL_NVIC_SetPriority(EXTI2_IRQn, 2, 0);
             HAL_NVIC_EnableIRQ(EXTI2_IRQn);
         }
 #endif
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<3)
         if(irq_mask & (1<<3)) {
-            HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 2);
+            HAL_NVIC_SetPriority(EXTI3_IRQn, 2, 0);
             HAL_NVIC_EnableIRQ(EXTI3_IRQn);
         }
 #endif
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & (1<<4)
         if(irq_mask & (1<<4)) {
-            HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 2);
+            HAL_NVIC_SetPriority(EXTI4_IRQn, 2, 0);
             HAL_NVIC_EnableIRQ(EXTI4_IRQn);
         }
 #endif
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & 0x03E0
         if(irq_mask & 0x03E0) {
-            HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 2);
+            HAL_NVIC_SetPriority(EXTI9_5_IRQn, 2, 0);
             HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
         }
 #endif
 #if (DRIVER_IRQMASK|AUXINPUT_MASK) & 0xFC00
         if(irq_mask & 0xFC00) {
-            HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 2);
+            HAL_NVIC_SetPriority(EXTI15_10_IRQn, 2, 0);
             HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
         }
 #endif
@@ -1659,8 +1723,6 @@ static bool driver_setup (settings_t *settings)
 {
   //    Interrupt_disableSleepOnIsrExit();
 
-    PULSE_TIMER_CLKEN();
-    STEPPER_TIMER_CLKEN();
 
     GPIO_InitTypeDef GPIO_Init = {
         .Speed = GPIO_SPEED_FREQ_HIGH,
@@ -1687,28 +1749,13 @@ static bool driver_setup (settings_t *settings)
 
  // Stepper init
 
-    STEPPER_TIMER->CR1 &= ~TIM_CR1_CEN;
-    STEPPER_TIMER->SR &= ~TIM_SR_UIF;
-    STEPPER_TIMER->CNT = 0;
-    STEPPER_TIMER->DIER |= TIM_DIER_UIE;
+    STEPPER_TIMER_CLKEN();
+    STEPPER_TIMER->CR1 = 0;
+    STEPPER_TIMER->PSC = STEPPER_TIMER_DIV - 1;
+    STEPPER_TIMER->CR1 |= TIM_CR1_DIR;
 
-    NVIC_SetPriority(STEPPER_TIMER_IRQn, 1);
+    HAL_NVIC_SetPriority(STEPPER_TIMER_IRQn, 0, 0);
     NVIC_EnableIRQ(STEPPER_TIMER_IRQn);
-
-    // Single-shot 0.1 us per tick
-    PULSE_TIMER->CR1 |= TIM_CR1_OPM|TIM_CR1_DIR|TIM_CR1_CKD_1|TIM_CR1_ARPE|TIM_CR1_URS;
-    PULSE_TIMER->PSC = hal.f_step_timer / 10000000UL - 1;
-    PULSE_TIMER->SR &= ~(TIM_SR_UIF|TIM_SR_CC1IF);
-    PULSE_TIMER->CNT = 0;
-    PULSE_TIMER->DIER |= TIM_DIER_UIE;
-
-    NVIC_SetPriority(PULSE_TIMER_IRQn, 0);
-    NVIC_EnableIRQ(PULSE_TIMER_IRQn);
-
- // Limit pins init
-
-    if(settings->limits.flags.hard_enabled)
-        HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0x02, 0x02);
 
  // Spindle init
 
@@ -1748,13 +1795,13 @@ static bool driver_setup (settings_t *settings)
 
     hal.settings_changed(settings, (settings_changed_flags_t){0});
 
-    stepperSetDirOutputs((axes_signals_t){0});
+    stepper_dir_out((axes_signals_t){0});
 
     return IOInitDone;
 }
 
 // Initialize HAL pointers, setup serial comms and enable EEPROM
-// NOTE: Grbl is not yet configured (from EEPROM data), driver_setup() will be called when done
+// NOTE: grblHAL is not yet configured (from EEPROM data), driver_setup() will be called when done
 
 bool driver_init (void)
 {
@@ -1794,13 +1841,19 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103CB";
 #endif
-    hal.driver_version = "250312";
+    hal.driver_version = "250328";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
 #endif
     hal.driver_setup = driver_setup;
-    hal.f_step_timer = SystemCoreClock;
+    hal.f_mcu = HAL_RCC_GetHCLKFreq() / 1000000UL;
+#if STEPPER_TIMER_N == 1
+    hal.f_step_timer =  HAL_RCC_GetPCLK2Freq() / STEPPER_TIMER_DIV;
+#else
+    hal.f_step_timer =  HAL_RCC_GetPCLK1Freq() * 2 / STEPPER_TIMER_DIV;
+#endif
+    hal.step_us_min = 3.5f;
     hal.rx_buffer_size = RX_BUFFER_SIZE;
     hal.delay_ms = &driver_delay;
     hal.settings_changed = settings_changed;
@@ -2083,45 +2136,38 @@ bool driver_init (void)
 /* interrupt handlers */
 
 // Main stepper driver
-void STEPPER_TIMER_IRQHandler (void)
+ISR_CODE void STEPPER_TIMER_IRQHandler (void)
 {
-    if ((STEPPER_TIMER->SR & TIM_SR_UIF) != 0)                  // check interrupt source
-    {
-        STEPPER_TIMER->SR = ~TIM_SR_UIF; // clear UIF flag
+//    DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, 1);
+
+    // Delayed step pulse handler
+    if((STEPPER_TIMER->SR & STEPPER_TIMER->DIER) & TIM_SR_CC2IF) {
+
+        STEPPER_TIMER->DIER &= ~TIM_DIER_CC2IE;
+
+        _stepper_step_out(step_pulse_out);
+    }
+    // Step pulse off handler
+    else if((STEPPER_TIMER->SR & STEPPER_TIMER->DIER) & TIM_SR_CC1IF) {
+
+        STEPPER_TIMER->DIER &= ~TIM_DIER_CC1IE;
+
+        stepper_step_out((axes_signals_t){0});
+
+        if((STEPPER_TIMER->SR & TIM_SR_UIF) || STEPPER_TIMER->CNT < step_pulse->t_off_min) {
+            STEPPER_TIMER->CNT = step_pulse->t_off_min;
+            NVIC_ClearPendingIRQ(STEPPER_TIMER_IRQn);
+        }
+
+        STEPPER_TIMER->SR = 0;
+    }
+    // Stepper timeout handler
+    else if(STEPPER_TIMER->SR & TIM_SR_UIF) {
+        STEPPER_TIMER->SR = 0;
         hal.stepper.interrupt_callback();
     }
-}
 
-/* The Stepper Port Reset Interrupt: This interrupt handles the falling edge of the step
-   pulse. This should always trigger before the next general stepper driver interrupt and independently
-   finish, if stepper driver interrupts is disabled after completing a move.
-   NOTE: Interrupt collisions between the serial and stepper interrupts can cause delays by
-   a few microseconds, if they execute right before one another. Not a big deal, but can
-   cause issues at high step rates if another high frequency asynchronous interrupt is
-   added to Grbl.
-*/
-
-// This interrupt is used only when STEP_PULSE_DELAY is enabled. Here, the step pulse is
-// initiated after the STEP_PULSE_DELAY time period has elapsed. The ISR TIMER2_OVF interrupt
-// will then trigger after the appropriate settings.pulse_microseconds, as in normal operation.
-// The new timing between direction, step pulse, and step complete events are setup in the
-// st_wake_up() routine.
-
-// This interrupt is enabled when Grbl sets the motor port bits to execute
-// a step. This ISR resets the motor port after a short period (settings.pulse_microseconds)
-// completing one step cycle.
-void PULSE_TIMER_IRQHandler (void)
-{
-    PULSE_TIMER->SR &= ~TIM_SR_UIF;                 // Clear UIF flag
-
-    if (PULSE_TIMER->ARR == pulse_delay)            // Delayed step pulse?
-    {
-        PULSE_TIMER->ARR = pulse_length;
-        stepperSetStepOutputs(next_step_outbits);   // begin step pulse
-        PULSE_TIMER->EGR = TIM_EGR_UG;
-        PULSE_TIMER->CR1 |= TIM_CR1_CEN;
-    } else
-        stepperSetStepOutputs((axes_signals_t){0}); // end step pulse
+//    DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, 0);
 }
 
 void core_pin_debounce (void *pin)

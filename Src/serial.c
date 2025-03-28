@@ -509,7 +509,7 @@ const io_stream_t *serialInit (uint32_t baud_rate)
 
     serialSetBaudRate(baud_rate);
 
-    HAL_NVIC_SetPriority(UART0_IRQ, 0, 0);
+    HAL_NVIC_SetPriority(UART0_IRQ, 1, 0);
     HAL_NVIC_EnableIRQ(UART0_IRQ);
 
     return &stream;
@@ -763,7 +763,7 @@ const io_stream_t *serial1Init (uint32_t baud_rate)
 
     serial1SetBaudRate(115200);
 
-    HAL_NVIC_SetPriority(UART1_IRQ, 0, 0);
+    HAL_NVIC_SetPriority(UART1_IRQ, 1, 0);
     HAL_NVIC_EnableIRQ(UART1_IRQ);
 
     return &stream;

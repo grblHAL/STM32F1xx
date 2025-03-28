@@ -224,24 +224,23 @@
 #define STEPPER_TIMER_IRQHandler    timerHANDLER(STEPPER_TIMER_N)
 #endif
 
-#if SPINDLE_PWM_TIMER_N == 3
-#define PULSE_TIMER_N               4
-#else
-#define PULSE_TIMER_N               3
-#endif
-#define PULSE_TIMER                 timer(PULSE_TIMER_N)
-#define PULSE_TIMER_CLKEN           timerCLKENA(PULSE_TIMER_N)
-#define PULSE_TIMER_IRQn            timerINT(PULSE_TIMER_N)
-#define PULSE_TIMER_IRQHandler      timerHANDLER(PULSE_TIMER_N)
+// Adjust these values to get more accurate step pulse timings when required, e.g if using high step rates.
+// The default values are calibrated for 5 microsecond pulses.
+// NOTE: step output mode, number of axes and compiler optimization setting may all affect these values.
 
-// Adjust STEP_PULSE_LATENCY to get accurate step pulse length when required, e.g if using high step rates.
-// The default value is calibrated for 10 microseconds length.
-// NOTE: step output mode, number of axes and compiler optimization settings may all affect this value.
-#ifndef STEP_PULSE_LATENCY
-#define STEP_PULSE_LATENCY 1.0f // microseconds
+// Minimum pulse off time
+#ifndef STEP_PULSE_TOFF_MIN
+#define STEP_PULSE_TOFF_MIN 2.5f
 #endif
-#ifndef STEP_PULSE_OFF_TIME_MIN
-#define STEP_PULSE_OFF_TIME_MIN 6 // x 100 ns, add stepper IRQ latency
+// Time from main stepper interrupt to pulse output, must be less than STEP_PULSE_TOFF
+// Adjust for correct pulse off time after configuring and running at a step rate > max possible.
+#ifndef STEP_PULSE_TON_LATENCY
+#define STEP_PULSE_TON_LATENCY 1.8f
+#endif
+// Time from step out to step reset.
+// Adjust for correct step pulse time.
+#ifndef STEP_PULSE_TOFF_LATENCY
+#define STEP_PULSE_TOFF_LATENCY 1.9f
 #endif
 
 // End configuration
