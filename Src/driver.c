@@ -447,12 +447,6 @@ static void stepperWakeUp (void)
     STEPPER_TIMER->CR1 |= TIM_CR1_CEN;
 }
 
-// Disables stepper driver interrupts
-static void stepperGoIdle (bool clear_signals)
-{
-    STEPPER_TIMER->DIER &= ~TIM_DIER_UIE;
-}
-
 // Set stepper pulse output pins
 // NOTE: step_out are: bit0 -> X, bit1 -> Y, bit2 -> Z...
 #ifdef SQUARING_ENABLED
@@ -675,6 +669,17 @@ inline static __attribute__((always_inline)) void stepper_dir_out (axes_signals_
     DIRECTION_PORT->ODR = (DIRECTION_PORT->ODR & ~DIRECTION_MASK) | ((dir_out.mask ^ settings.steppers.dir_invert.mask) << DIRECTION_OUTMODE);
  #endif
 #endif
+}
+
+// Disables stepper driver interrupts
+static void stepperGoIdle (bool clear_signals)
+{
+    STEPPER_TIMER->DIER &= ~TIM_DIER_UIE;
+
+    if(clear_signals) {
+        stepper_dir_out((axes_signals_t){0});
+        stepper_step_out((axes_signals_t){0});
+    }
 }
 
 static inline __attribute__((always_inline)) void _stepper_step_out (axes_signals_t step_out)
@@ -1326,8 +1331,7 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed)
     stepdirmap_init (settings);
 #endif
 
-    stepper_step_out((axes_signals_t){0});
-    stepper_dir_out((axes_signals_t){0});
+    hal.stepper.go_idle(true);
 
 #ifdef SQUARING_ENABLED
     hal.stepper.disable_motors((axes_signals_t){0}, SquaringMode_Both);
@@ -1794,8 +1798,6 @@ static bool driver_setup (settings_t *settings)
     IOInitDone = settings->version.id == 23;
 
     hal.settings_changed(settings, (settings_changed_flags_t){0});
-
-    stepper_dir_out((axes_signals_t){0});
 
     return IOInitDone;
 }
