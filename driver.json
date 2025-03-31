@@ -44,7 +44,8 @@
           "DEFAULT_PLANNER_BUFFER_BLOCKS": 35,
           "CORE_TASK_POOL_SIZE": 10,
           "NO_SETTINGS_DESCRIPTIONS": "",
-          "NGC_PARAMETERS_ENABLE": 0
+          "NGC_PARAMETERS_ENABLE": 0,
+          "NGC_EXPRESSIONS_ENABLE": 0
       }
     },
     {
