@@ -39,7 +39,7 @@
 #endif
 #endif
 
-#include "grbl/protocol.h"
+#include "grbl/task.h"
 #include "grbl/machine_limits.h"
 #include "grbl/motor_pins.h"
 #include "grbl/pin_bits_masks.h"
@@ -1005,7 +1005,7 @@ static void aux_irq_handler (uint8_t port, bool state)
 #endif
 #ifdef MPG_MODE_PIN
             case Input_MPGSelect:
-                protocol_enqueue_foreground_task(mpg_select, NULL);
+                task_add_immediate(mpg_select, NULL);
                 break;
 #endif
             default:
@@ -2148,7 +2148,7 @@ bool driver_init (void)
     if(!hal.driver_cap.mpg_mode)
         hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, NULL);
     if(hal.driver_cap.mpg_mode)
-        protocol_enqueue_foreground_task(mpg_enable, NULL);
+        task_run_on_startup(mpg_enable, NULL);
 #elif MPG_ENABLE == 2
     if(!hal.driver_cap.mpg_mode)
         hal.driver_cap.mpg_mode = stream_mpg_register(stream_open_instance(MPG_STREAM, 115200, NULL, NULL), false, stream_mpg_check_enable);
@@ -2287,7 +2287,7 @@ void EXTI0_IRQHandler(void)
 #elif LIMIT_MASK & (1<<0)
         core_pin_irq(ifg);
 #elif MPG_MODE_BIT && (1<<0)
-        protocol_enqueue_foreground_task(mpg_select, NULL);
+        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<0)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2315,7 +2315,7 @@ void EXTI1_IRQHandler(void)
 #elif LIMIT_MASK & (1<<1)
         core_pin_irq(ifg);
 #elif MPG_MODE_BIT && (1<<1)
-        protocol_enqueue_foreground_task(mpg_select, NULL);
+        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<1)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2343,7 +2343,7 @@ void EXTI2_IRQHandler(void)
 #elif LIMIT_MASK & (1<<2)
         core_pin_irq(ifg);
 #elif MPG_MODE_BIT && (1<<2)
-        protocol_enqueue_foreground_task(mpg_select, NULL);
+        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<2)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2371,7 +2371,7 @@ void EXTI3_IRQHandler(void)
 #elif LIMIT_MASK & (1<<3)
         core_pin_irq(ifg);
 #elif MPG_MODE_BIT && (1<<3)
-        protocol_enqueue_foreground_task(mpg_select, NULL);
+        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<3)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2399,7 +2399,7 @@ void EXTI4_IRQHandler(void)
 #elif LIMIT_MASK & (1<<4)
         core_pin_irq(ifg);
 #elif MPG_MODE_BIT && (1<<4)
-        protocol_enqueue_foreground_task(mpg_select);
+        task_add_immediate(mpg_select);
 #elif I2C_STROBE_BIT & (1<<4)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2441,7 +2441,7 @@ void EXTI9_5_IRQHandler(void)
 #endif
 #if MPG_MODE_BIT & 0x03E0
         if(ifg & MPG_MODE_BIT)
-            protocol_enqueue_foreground_task(mpg_select, NULL);
+            task_add_immediate(mpg_select, NULL);
 #endif
 #if AUXINPUT_MASK & 0x03E0
         if(ifg & aux_irq)
@@ -2479,7 +2479,7 @@ void EXTI15_10_IRQHandler(void)
 #endif
 #if MPG_MODE_BIT & 0xFC00
         if(ifg & MPG_MODE_BIT)
-            protocol_enqueue_foreground_task(mpg_select, NULL);
+            task_add_immediate(mpg_select, NULL);
 #endif
 #if AUXINPUT_MASK & 0xFC00
         if(ifg & aux_irq)
