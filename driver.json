@@ -114,6 +114,7 @@
       "caps": {
         "axes": 4,
 		"auto_square": 1,
+        "digital_in": 1,
         "digital_out": 1,
         "pio_board": "genericSTM32F103RC",
         "ldscript": "STM32F103RCTX_FLASH.ld"
