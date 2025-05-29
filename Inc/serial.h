@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2017-2024 Terje Io
+  Copyright (c) 2017-2025 Terje Io
 
   grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -33,19 +33,6 @@
 //  31 - GPIOC: TX = 10, RX = 11
 //   5 - GPIOC: TX = 12, GPIOD: RX = 2
 
-#ifdef STM32F103xB
-
-#ifdef SERIAL_PORT
-const io_stream_t *serialInit (uint32_t baud_rate);
-#endif
-
-#ifdef SERIAL1_PORT
-const io_stream_t *serial1Init (uint32_t baud_rate);
-#endif
-
-#else
 void serialRegisterStreams (void);
-#endif
-
 
 /*EOF*/

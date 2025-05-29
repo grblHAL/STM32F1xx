@@ -34,10 +34,6 @@
 #endif
 #define BOARD_URL "https://github.com/shaise/GrblCNC/tree/master/Hardware/GrblCnc3040"
 
-#if !defined(STM32F103xB)
-#define HAS_IOPORTS
-#endif
-
 // Define step pulse output pins.
 #define STEP_PORT               GPIOA
 #define X_STEP_PIN              0
@@ -117,19 +113,34 @@
 #define COOLANT_MIST_PIN        AUXOUTPUT4_PIN
 #endif
 
-// Define user-control controls (cycle start, reset, feed hold) input pins.
-#define CONTROL_PORT            GPIOB
-#define RESET_PIN               5
-#define FEED_HOLD_PIN           14
-#define CYCLE_START_PIN         15
-#define CONTROL_INMODE          GPIO_MAP
-
-#ifdef HAS_IOPORTS
-
-#define AUXINPUT0_PORT          GPIOB
+#define AUXINPUT0_PORT          GPIOB // Safety door
 #define AUXINPUT0_PIN           8
-#define AUXINPUT1_PORT          GPIOB
+#define AUXINPUT1_PORT          GPIOB // Probe
 #define AUXINPUT1_PIN           13
+#define AUXINPUT2_PORT          GPIOB // Reset/EStop
+#define AUXINPUT2_PIN           5
+#define AUXINPUT3_PORT          GPIOB // Feed hold
+#define AUXINPUT3_PIN           14
+#define AUXINPUT4_PORT          GPIOB // Cycle start
+#define AUXINPUT4_PIN           15
+
+// Define user-control controls (cycle start, reset, feed hold) input pins.
+#if CONTROL_ENABLE & CONTROL_HALT
+#define RESET_PORT              AUXINPUT2_PORT
+#define RESET_PIN               AUXINPUT2_PIN
+#endif
+#if CONTROL_ENABLE & CONTROL_FEED_HOLD
+#define FEED_HOLD_PORT          AUXINPUT3_PORT
+#define FEED_HOLD_PIN           AUXINPUT3_PIN
+#endif
+#if CONTROL_ENABLE & CONTROL_CYCLE_START
+#define CYCLE_START_PORT        AUXINPUT4_PORT
+#define CYCLE_START_PIN         AUXINPUT4_PIN
+#endif
+#if SAFETY_DOOR_ENABLE
+#define SAFETY_DOOR_PORT        AUXINPUT1_PORT
+#define SAFETY_DOOR_PIN         AUXINPUT1_PIN
+#endif
 
 #if PROBE_ENABLE
 #define PROBE_PORT              AUXINPUT1_PORT
@@ -140,19 +151,6 @@
 #define SAFETY_DOOR_PORT        AUXINPUT0_PORT
 #define SAFETY_DOOR_PIN         AUXINPUT0_PIN
 #endif
-
-#else
-
-// Define probe switch input pin.
-#define PROBE_PORT              GPIOB
-#define PROBE_PIN               13
-
-#if SAFETY_DOOR_ENABLE
-#define SAFETY_DOOR_PORT        GPIOB
-#define SAFETY_DOOR_PIN         8
-#endif
-
-#endif // !HAS_IOPORTS
 
 #if KEYPAD_ENABLE == 1
 #error I2C keypad mode is not supported!

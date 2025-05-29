@@ -67,7 +67,7 @@ Programming port, top view (not mounted)
 */
 
 #if EEPROM_ENABLE
-#error EEPROM plugin not supported!
+//#error EEPROM plugin not supported!
 #endif
 
 #ifndef STM32F103xE
@@ -110,16 +110,9 @@ Programming port, top view (not mounted)
 #define Z_LIMIT_PIN             14
 #define LIMIT_INMODE            GPIO_BITBAND
 
-// Define ganged axis or A axis step pulse and step direction output pins.
-#if N_ABC_MOTORS > 0
-#define M3_AVAILABLE
-#define M3_STEP_PORT            STEP_PORT
-#define M3_STEP_PIN             6
-#define M3_DIRECTION_PORT       DIRECTION_PORT
-#define M3_DIRECTION_PIN        7
-#define M3_LIMIT_PORT           GPIOB
-#define M3_LIMIT_PIN            15 //PB15
-#endif
+
+#define A_STEP_PORT            STEP_PORT
+#define A_STEP_PIN             6
 
 // Define ganged axis or B axis step pulse and step direction output pins.
 #if N_ABC_MOTORS > 1
@@ -179,19 +172,32 @@ Programming port, top view (not mounted)
 #define COOLANT_MIST_PIN        AUXOUTPUT4_PIN
 #endif
 
-// Define user-control controls (cycle start, reset, feed hold) input pins.
-#define CONTROL_PORT            GPIOC
-#define RESET_PIN               7
-#define FEED_HOLD_PIN           6
-#define CYCLE_START_PIN         5
-#define CONTROL_INMODE          GPIO_MAP
-
-#define AUXINPUT0_PORT          GPIOC
+#define AUXINPUT0_PORT          GPIOC // Safety door
 #define AUXINPUT0_PIN           4
-#define AUXINPUT1_PORT          GPIOC
+#define AUXINPUT1_PORT          GPIOC // Probe
 #define AUXINPUT1_PIN           3
 #define AUXINPUT2_PORT          GPIOB
 #define AUXINPUT2_PIN           15
+#define AUXINPUT3_PORT          GPIOC // Reset/EStop
+#define AUXINPUT3_PIN           7
+#define AUXINPUT4_PORT          GPIOC // Feed hold
+#define AUXINPUT4_PIN           6
+#define AUXINPUT5_PORT          GPIOC // Cycle start
+#define AUXINPUT5_PIN           5
+
+// Define user-control controls (cycle start, reset, feed hold) input pins.
+#if CONTROL_ENABLE & CONTROL_HALT
+#define RESET_PORT              AUXINPUT3_PORT
+#define RESET_PIN               AUXINPUT3_PIN
+#endif
+#if CONTROL_ENABLE & CONTROL_FEED_HOLD
+#define FEED_HOLD_PORT          AUXINPUT4_PORT
+#define FEED_HOLD_PIN           AUXINPUT4_PIN
+#endif
+#if CONTROL_ENABLE & CONTROL_CYCLE_START
+#define CYCLE_START_PORT        AUXINPUT5_PORT
+#define CYCLE_START_PIN         AUXINPUT5_PIN
+#endif
 
 #if SAFETY_DOOR_ENABLE
 #define SAFETY_DOOR_PORT        AUXINPUT0_PORT

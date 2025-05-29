@@ -21,8 +21,6 @@
 
 #include "driver.h"
 
-#ifdef HAS_IOPORTS
-
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
@@ -289,5 +287,3 @@ void ioports_init (pin_group_pins_t *aux_inputs, pin_group_pins_t *aux_outputs)
 
     ioports_add_digital(&ports);
 }
-
-#endif

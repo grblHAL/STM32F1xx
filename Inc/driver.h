@@ -98,8 +98,8 @@
 #define GPIO_MAP     14
 #define GPIO_BITBAND 15
 
-#ifndef STM32F103xB
-#define HAS_IOPORTS
+#ifndef CONTROL_ENABLE
+#define CONTROL_ENABLE (CONTROL_HALT|CONTROL_FEED_HOLD|CONTROL_CYCLE_START)
 #endif
 
 #ifdef BOARD_CNC_BOOSTERPACK
@@ -245,28 +245,14 @@
 
 // End configuration
 
-#if TRINAMIC_ENABLE
-#ifndef TRINAMIC_MIXED_DRIVERS
-#define TRINAMIC_MIXED_DRIVERS 1
-#endif
-#include "motors/trinamic.h"
-#include "trinamic/common.h"
-#endif
+#include "grbl/driver_opts2.h"
 
-#if EEPROM_ENABLE == 0
-#define FLASH_ENABLE 1
-#else
-#define FLASH_ENABLE 0
+#if TRINAMIC_ENABLE
+#include "trinamic/common.h"
 #endif
 
 #if I2C_ENABLE && !defined(I2C_PORT)
 #define I2C_PORT 2
-#endif
-
-#if KEYPAD_ENABLE == 1 && !defined(I2C_STROBE_PORT)
-#error Keypad plugin not supported!
-#elif I2C_STROBE_ENABLE && !defined(I2C_STROBE_PORT)
-#error I2C strobe not supported!
 #endif
 
 #if SDCARD_ENABLE && !defined(SD_CS_PORT)
@@ -279,19 +265,6 @@
 
 #if (!USB_SERIAL_CDC || MPG_ENABLE) && !defined(SERIAL_PORT)
 #define SERIAL_PORT 1
-#endif
-
-#ifndef RESET_PORT
-#define RESET_PORT CONTROL_PORT
-#endif
-#ifndef FEED_HOLD_PORT
-#define FEED_HOLD_PORT CONTROL_PORT
-#endif
-#ifndef CYCLE_START_PORT
-#define CYCLE_START_PORT CONTROL_PORT
-#endif
-#if SAFETY_DOOR_ENABLE && !defined(SAFETY_DOOR_PORT)
-#define SAFETY_DOOR_PORT CONTROL_PORT
 #endif
 
 typedef struct {
@@ -331,9 +304,7 @@ void board_init (void);
 
 bool driver_init (void);
 void gpio_irq_enable (const input_signal_t *input, pin_irq_mode_t irq_mode);
-#ifdef HAS_IOPORTS
 void ioports_init (pin_group_pins_t *aux_inputs, pin_group_pins_t *aux_outputs);
 void ioports_event (input_signal_t *input);
-#endif
 
 #endif // __DRIVER_H__

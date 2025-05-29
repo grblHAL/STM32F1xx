@@ -143,20 +143,32 @@ Programming port, top view (not mounted)
 #define COOLANT_MIST_PIN        AUXOUTPUT4_PIN
 #endif
 
+#define AUXINPUT0_PORT          GPIOB // Safety door - 10pin IDC, 5
+#define AUXINPUT0_PIN           6
+#define AUXINPUT1_PORT          GPIOB // 10pin IDC, 8
+#define AUXINPUT1_PIN           3
+#define AUXINPUT2_PORT          GPIOB // Probe - 10pin IDC, 7
+#define AUXINPUT2_PIN           4
+#define AUXINPUT3_PORT          GPIOB // Reset/EStop
+#define AUXINPUT3_PIN           9
+#define AUXINPUT4_PORT          GPIOB // Feed hold
+#define AUXINPUT4_PIN           8
+#define AUXINPUT5_PORT          GPIOB // Cycle start
+#define AUXINPUT5_PIN           7
+
 // Define user-control controls (cycle start, reset, feed hold) input pins.
-#define CONTROL_PORT            GPIOB
-#define RESET_PIN               9 // 10pin IDC, 4
-#define FEED_HOLD_PIN           8 // 10pin IDC, 3
-#define CYCLE_START_PIN         7 // 10pin IDC, 6
-#define CONTROL_INMODE          GPIO_BITBAND
-
-#define AUXINPUT0_PORT          GPIOB
-#define AUXINPUT0_PIN           6 // 10pin IDC, 5
-#define AUXINPUT1_PORT          GPIOB
-#define AUXINPUT1_PIN           3 // 10pin IDC, 8
-#define AUXINPUT2_PORT          GPIOB
-#define AUXINPUT2_PIN           4 // 10pin IDC, 7
-
+#if CONTROL_ENABLE & CONTROL_HALT
+#define RESET_PORT              AUXINPUT3_PORT
+#define RESET_PIN               AUXINPUT3_PIN
+#endif
+#if CONTROL_ENABLE & CONTROL_FEED_HOLD
+#define FEED_HOLD_PORT          AUXINPUT4_PORT
+#define FEED_HOLD_PIN           AUXINPUT4_PIN
+#endif
+#if CONTROL_ENABLE & CONTROL_CYCLE_START
+#define CYCLE_START_PORT        AUXINPUT5_PORT
+#define CYCLE_START_PIN         AUXINPUT5_PIN
+#endif
 #if PROBE_ENABLE
 #define PROBE_PORT              AUXINPUT2_PORT
 #define PROBE_PIN               AUXINPUT2_PIN

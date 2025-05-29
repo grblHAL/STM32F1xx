@@ -34,9 +34,7 @@
 static stream_rx_buffer_t rxbuf = {0};
 static stream_tx_buffer_t txbuf = {0};
 static enqueue_realtime_command_ptr enqueue_realtime_command = protocol_enqueue_realtime_command;
-#ifndef STM32F103xB
 static const io_stream_t *serialInit (uint32_t baud_rate);
-#endif
 #else
 #define SERIAL_PORT 0
 #endif
@@ -45,9 +43,7 @@ static const io_stream_t *serialInit (uint32_t baud_rate);
 static stream_rx_buffer_t rxbuf1 = {0};
 static stream_tx_buffer_t txbuf1 = {0};
 static enqueue_realtime_command_ptr enqueue_realtime_command1 = protocol_enqueue_realtime_command;
-#ifndef STM32F103xB
 static const io_stream_t *serial1Init(uint32_t baud_rate);
-#endif
 #else
 #define SERIAL1_PORT 0
 #endif
@@ -226,8 +222,6 @@ void serialRegisterStreams (void)
         .streams = serial,
     };
 
-#ifndef STM32F103xB
-
 #if SERIAL_PORT
 
     static const periph_pin_t tx0 = {
@@ -277,8 +271,6 @@ void serialRegisterStreams (void)
     hal.periph_port.register_pin(&tx1);
 
 #endif // SERIAL1_PORT
-
-#endif // STM32F103xB
 
     stream_register_streams(&streams);
 }
@@ -460,10 +452,7 @@ static enqueue_realtime_command_ptr serialSetRtHandler (enqueue_realtime_command
     return prev;
 }
 
-#ifndef STM32F103xB
-static
-#endif
-const io_stream_t *serialInit (uint32_t baud_rate)
+static const io_stream_t *serialInit (uint32_t baud_rate)
 {
     static const io_stream_t stream = {
         .type = StreamType_Serial,
@@ -713,10 +702,7 @@ static enqueue_realtime_command_ptr serial1SetRtHandler (enqueue_realtime_comman
     return prev;
 }
 
-#ifndef STM32F103xB
-static
-#endif
-const io_stream_t *serial1Init (uint32_t baud_rate)
+static const io_stream_t *serial1Init (uint32_t baud_rate)
 {
     static const io_stream_t stream = {
         .type = StreamType_Serial,
