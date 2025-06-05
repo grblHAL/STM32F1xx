@@ -1099,7 +1099,7 @@ static void aux_assign_irq (void)
                             if(input->id < input2->id || (aux->cap.bits & main_signals.bits)) {
                                 input2->cap.irq_mode = IRQ_Mode_None;
                                 if(!aux_ctrl_is_probe(input2->id))
-                                    input2->id = (pin_function_t)(Input_Aux0 + input->user_port);
+                                    input2->id = (pin_function_t)(Input_Aux0 + input2->user_port);
                             } else {
                                 input->cap.irq_mode = IRQ_Mode_None;
                                 if(!aux_ctrl_is_probe(input->id))
@@ -1865,7 +1865,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103RC";
-    hal.driver_version = "250604";
+    hal.driver_version = "250605";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
