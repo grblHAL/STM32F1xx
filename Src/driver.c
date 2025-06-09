@@ -1865,7 +1865,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103RC";
-    hal.driver_version = "250605";
+    hal.driver_version = "250609";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -2014,7 +2014,7 @@ bool driver_init (void)
 
             aux_inputs.n_pins++;
 
-            if(input->id < Input_Aux0) {
+            if(!(input->id >= Input_Aux0 && input->id <= Input_AuxMax)) {
                 input->id = Input_Aux0 + input->user_port;
                 aux_ctrl_remap_explicit(input->port, input->pin, input->user_port, input);
             }
