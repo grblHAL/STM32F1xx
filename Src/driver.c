@@ -1753,7 +1753,6 @@ static bool driver_setup (settings_t *settings)
 {
   //    Interrupt_disableSleepOnIsrExit();
 
-
     GPIO_InitTypeDef GPIO_Init = {
         .Speed = GPIO_SPEED_FREQ_HIGH,
         .Mode = GPIO_MODE_OUTPUT_PP
@@ -1764,16 +1763,19 @@ static bool driver_setup (settings_t *settings)
      *************************/
 
     uint32_t i;
-    for(i = 0 ; i < sizeof(outputpin) / sizeof(output_signal_t); i++) {
+    axes_signals_t st_enable = st_get_enable_out();
+
+    for(i = 0; i < sizeof(outputpin) / sizeof(output_signal_t); i++) {
+
+        GPIO_Init.Pin = 1 << outputpin[i].pin;
+        GPIO_Init.Mode = outputpin[i].mode.open_drain ? GPIO_MODE_OUTPUT_OD : GPIO_MODE_OUTPUT_PP;
 
         if(outputpin[i].group == PinGroup_MotorChipSelect ||
             outputpin[i].group == PinGroup_MotorUART ||
              outputpin[i].id == Output_SPICS ||
-              outputpin[i].group == PinGroup_StepperEnable)
-            DIGITAL_OUT(outputpin[i].port, outputpin[i].pin, 1);
+             (outputpin[i].group == PinGroup_StepperEnable && (st_enable.mask & xbar_fn_to_axismask(outputpin[i].id).mask)))
+            outputpin[i].port->BSRR = GPIO_Init.Pin;
 
-        GPIO_Init.Pin = 1 << outputpin[i].pin;
-        GPIO_Init.Mode = outputpin[i].mode.open_drain ? GPIO_MODE_OUTPUT_OD : GPIO_MODE_OUTPUT_PP;
         HAL_GPIO_Init(outputpin[i].port, &GPIO_Init);
     }
 
@@ -1865,7 +1867,7 @@ bool driver_init (void)
     __HAL_AFIO_REMAP_SWJ_NOJTAG();
 
     hal.info = "STM32F103RC";
-    hal.driver_version = "250609";
+    hal.driver_version = "250716";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
