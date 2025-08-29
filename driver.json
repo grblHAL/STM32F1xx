@@ -120,7 +120,8 @@
         "ldscript": "STM32F103RCTX_FLASH.ld"
       },
       "symbols": {
-          "STM32F103xE": ""
+          "STM32F103xE": "",
+		  "DEFAULT_SPINDLE_PWM_FREQ": 1000
       }
     },
     {
@@ -137,7 +138,8 @@
       },
       "symbols": {
           "STM32F103xE": "",
-          "HSE_VALUE": 12000000
+          "HSE_VALUE": 12000000,
+		  "DEFAULT_SPINDLE_PWM_FREQ": 1000
       }
     },
     {
