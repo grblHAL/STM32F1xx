@@ -2,7 +2,7 @@
 
 This driver can be built with the [Web Builder](http://svn.io-engineering.com:8080/?driver=STM32F1xx).
 
-2025-05-29: Support for 128K F103s is frozen at [commite 58a1c1](https://github.com/grblHAL/STM32F1xx/commit/e58a1c1d6985982b4f7c3434a1f20b186f23fc7e) due to lack of memory.
+2025-05-22: Support for 128K F103s is frozen at [commit 58a1c1](https://github.com/grblHAL/STM32F1xx/commit/e58a1c1d6985982b4f7c3434a1f20b186f23fc7e) due to lack of memory. Source code can be found [here](https://github.com/grblHAL/STM32F1xx/releases/tag/20250514).
 
 2025-01-17: Builds > 20250116 removes support for advanced gcodes from the 128K \*pills to save some flash,  `G5`, `G5.1` and all canned cycles are the main ones.
 
