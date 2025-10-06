@@ -29,26 +29,6 @@
   },
   "boards": [
     {
-      "name": "CNC 3040 (Red/Bluepill 128K)",
-      "notes": "Not recommended due to limited memory capacity.",
-      "symbol": "BOARD_CNC3040",
-      "URL": "https://github.com/shaise/GrblCNC",
-      "MAP": "boards/cnc3040_map.h",
-      "caps": {
-        "axes": 4,
-        "auto_square": 0
-      },
-      "symbols": {
-          "STM32F103xB": "",
-          "RX_BUFFER_SIZE": 512,
-          "DEFAULT_PLANNER_BUFFER_BLOCKS": 30,
-          "CORE_TASK_POOL_SIZE": 10,
-          "NO_SETTINGS_DESCRIPTIONS": "",
-          "NGC_PARAMETERS_ENABLE": 0,
-          "NGC_EXPRESSIONS_ENABLE": 0
-      }
-    },
-    {
       "name": "CNC 3040 F103RC",
       "symbol": "BOARD_CNC3040",
       "URL": "https://github.com/shaise/GrblCNC",
