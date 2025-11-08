@@ -4,7 +4,7 @@
 
   Part of grblHAL
 
-  Copyright (c) 2019-2024 Terje Io
+  Copyright (c) 2019-2025 Terje Io
 
   grblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ static inline bool usb_write (void)
 
     txbuf.s = txbuf.use_tx2data ? txbuf.data2 : txbuf.data;
 
-    while(CDC_Transmit_FS((uint8_t *)txbuf.s, txbuf.length) == USBD_BUSY) {
+    while(CDC_Transmit_FS(txbuf.s, txbuf.length) == USBD_BUSY) {
         if(!hal.stream_blocking_callback())
             return false;
     }
@@ -96,23 +96,6 @@ static inline bool usb_write (void)
     txbuf.use_tx2data = !txbuf.use_tx2data;
     txbuf.s = txbuf.use_tx2data ? txbuf.data2 : txbuf.data;
     txbuf.length = 0;
-
-    return true;
-}
-
-//
-// Writes a single character to the USB output stream, blocks if buffer full
-//
-static bool usbPutC (const char c)
-{
-    static uint8_t buf[1];
-
-    *buf = c;
-
-    while(CDC_Transmit_FS(buf, 1) == USBD_BUSY) {
-        if(!hal.stream_blocking_callback())
-            return false;
-    }
 
     return true;
 }
@@ -154,7 +137,7 @@ static void usbWriteS (const char *s)
 //
 // Writes a number of characters from string to the USB output stream, blocks if buffer full
 //
-static void usbWrite (const char *s, uint16_t length)
+static void usbWrite (const uint8_t *s, uint16_t length)
 {
     if(length == 0)
         return;
@@ -182,19 +165,38 @@ static void usbWrite (const char *s, uint16_t length)
 }
 
 //
+// Writes a single character to the USB output stream, blocks if buffer full
+//
+static bool usbPutC (const uint8_t c)
+{
+    static uint8_t s[2] = "";
+
+    *s = c;
+
+    if(txbuf.length)
+        usbWriteS((char *)s);
+    else while(CDC_Transmit_FS(s, 1) == USBD_BUSY) {
+        if(!hal.stream_blocking_callback())
+            return false;
+    }
+
+    return true;
+}
+
+//
 // usbGetC - returns -1 if no data available
 //
-static int16_t usbGetC (void)
+static int32_t usbGetC (void)
 {
-    uint_fast16_t tail = rxbuf.tail;    // Get buffer pointer
+    uint_fast16_t tail = rxbuf.tail;            // Get buffer pointer
 
     if(tail == rxbuf.head)
         return -1; // no data available
 
-    char data = rxbuf.data[tail];       // Get next character
-    rxbuf.tail = BUFNEXT(tail, rxbuf);  // and update pointer
+    int32_t data = (int32_t)rxbuf.data[tail];   // Get next character
+    rxbuf.tail = BUFNEXT(tail, rxbuf);          // and update pointer
 
-    return (int16_t)data;
+    return data;
 }
 
 static bool usbSuspendInput (bool suspend)
@@ -202,7 +204,7 @@ static bool usbSuspendInput (bool suspend)
     return stream_rx_suspend(&rxbuf, suspend);
 }
 
-static bool usbEnqueueRtCommand (char c)
+static bool usbEnqueueRtCommand (uint8_t c)
 {
     return enqueue_realtime_command(c);
 }

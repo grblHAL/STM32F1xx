@@ -3,7 +3,7 @@
 
   Part of grblHAL driver for STM32F103xx
 
-  Copyright (c) 2018-2023 Terje Io
+  Copyright (c) 2018-2025 Terje Io
 
   Grbl is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 #define I2CPORT I2Cport(I2C_PORT)
 
 static uint8_t keycode = 0;
+static volatile bool await_rx = false;
 static keycode_callback_ptr keypad_callback = NULL;
 static I2C_HandleTypeDef i2c_port = {
     .Instance = I2CPORT,
@@ -57,22 +58,24 @@ static I2C_HandleTypeDef i2c_port = {
 #if I2C_PORT == 1
 void I2C1_EV_IRQHandler(void)
 {
-  HAL_I2C_EV_IRQHandler(&i2c_port);
+    HAL_I2C_EV_IRQHandler(&i2c_port);
 }
 
 void I2C1_ER_IRQHandler(void)
 {
-  HAL_I2C_ER_IRQHandler(&i2c_port);
+    await_rx = false;
+    HAL_I2C_ER_IRQHandler(&i2c_port);
 }
 #else
 void I2C2_EV_IRQHandler(void)
 {
-  HAL_I2C_EV_IRQHandler(&i2c_port);
+    HAL_I2C_EV_IRQHandler(&i2c_port);
 }
 
 void I2C2_ER_IRQHandler(void)
 {
-  HAL_I2C_ER_IRQHandler(&i2c_port);
+    await_rx = false;
+    HAL_I2C_ER_IRQHandler(&i2c_port);
 }
 #endif
 
@@ -101,6 +104,27 @@ bool i2c_get_keycode (i2c_address_t i2cAddr, keycode_callback_ptr callback)
     }
 
     return ok;
+}
+bool i2c_send (i2c_address_t i2cAddr, uint8_t *buf, size_t size, bool block)
+{
+    if(!wait_ready())
+        return false;
+
+    bool ok = HAL_I2C_Master_Transmit(&i2c_port, i2cAddr << 1, buf, (uint16_t)size, 100) == HAL_OK;
+
+//    __HAL_DMA_DISABLE(&i2c_dma_tx);
+
+    return ok && (!block || wait_ready());
+}
+
+bool i2c_receive (i2c_address_t i2cAddr, uint8_t *buf, size_t size, bool block)
+{
+    if(!wait_ready())
+        return false;
+
+    await_rx = HAL_I2C_Master_Receive_IT(&i2c_port, i2cAddr << 1, buf, size) == HAL_OK;
+
+    return await_rx && (!block || wait_ready());
 }
 
 bool i2c_transfer (i2c_transfer_t *i2c, bool read)
