@@ -110,9 +110,16 @@ Programming port, top view (not mounted)
 #define Z_LIMIT_PIN             14
 #define LIMIT_INMODE            GPIO_BITBAND
 
-
-#define A_STEP_PORT            STEP_PORT
-#define A_STEP_PIN             6
+// Define ganged axis or A axis step pulse and step direction output pins.
+#if N_ABC_MOTORS > 0
+#define M3_AVAILABLE
+#define M3_STEP_PORT            STEP_PORT
+#define M3_STEP_PIN             6
+#define M3_DIRECTION_PORT       DIRECTION_PORT
+#define M3_DIRECTION_PIN        7
+#define M3_LIMIT_PORT           GPIOB
+#define M3_LIMIT_PIN            15 //PB15
+#endif
 
 // Define ganged axis or B axis step pulse and step direction output pins.
 #if N_ABC_MOTORS > 1
