@@ -19,3 +19,6 @@
 [submodule "eeprom"]
 	path = eeprom
 	url = https://github.com/grblHAL/Plugin_EEPROM
+[submodule "plugins"]
+	path = plugins
+	url = https://github.com/grblHAL/Plugins_misc/
