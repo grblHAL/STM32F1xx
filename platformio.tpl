@@ -22,6 +22,7 @@ lib_deps =
   motors
   trinamic
   odometer
+  plugins
   FatFs
   sdcard
   Core
