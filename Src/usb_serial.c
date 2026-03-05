@@ -27,6 +27,9 @@
 #include "grbl/protocol.h"
 
 #include "main.h"
+
+#if USB_SERIAL_CDC
+
 #include "usbd_cdc_if.h"
 #include "usb_device.h"
 
@@ -262,3 +265,5 @@ void usbBufferInput (uint8_t *data, uint32_t length)
         data++;                                                 // next
     }
 }
+
+#endif

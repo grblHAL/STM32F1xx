@@ -2188,7 +2188,7 @@ void EXTI0_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<0)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT && (1<<0)
+#elif MPG_MODE_BIT & (1<<0)
         task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<0)
         if(i2c_strobe.callback)
@@ -2214,7 +2214,7 @@ void EXTI1_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<1)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT && (1<<1)
+#elif MPG_MODE_BIT & (1<<1)
         task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<1)
         if(i2c_strobe.callback)
@@ -2240,7 +2240,7 @@ void EXTI2_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<2)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT && (1<<2)
+#elif MPG_MODE_BIT & (1<<2)
         task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<2)
         if(i2c_strobe.callback)
@@ -2266,7 +2266,7 @@ void EXTI3_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<3)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT && (1<<3)
+#elif MPG_MODE_BIT & (1<<3)
         task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<3)
         if(i2c_strobe.callback)
@@ -2292,7 +2292,7 @@ void EXTI4_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<4)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT && (1<<4)
+#elif MPG_MODE_BIT & (1<<4)
         task_add_immediate(mpg_select);
 #elif I2C_STROBE_BIT & (1<<4)
         if(i2c_strobe.callback)
