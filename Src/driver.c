@@ -260,8 +260,6 @@ static output_signal_t outputpin[] = {
 #endif
 };
 
-static void aux_irq_handler (uint8_t port, bool state);
-
 extern __IO uint32_t uwTick;
 static uint32_t aux_irq = 0;
 static bool IOInitDone = false;
@@ -921,7 +919,13 @@ static bool probeGetState (void * input)
 
 static void mpg_select (void *data)
 {
-    stream_mpg_enable(DIGITAL_IN(MPG_MODE_PORT, MPG_MODE_PIN) == 0);
+    static volatile bool lock = false;
+
+    if(!lock) {
+        lock = true;
+        stream_mpg_enable(DIGITAL_IN(MPG_MODE_PORT, MPG_MODE_PIN) == 0);
+        lock = false;
+    }
 }
 
 static void mpg_enable (void *data)
@@ -1846,7 +1850,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103RC";
 #endif
-    hal.driver_version = "260122";
+    hal.driver_version = "260305";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -2188,8 +2192,6 @@ void EXTI0_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<0)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT & (1<<0)
-        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<0)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2214,8 +2216,6 @@ void EXTI1_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<1)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT & (1<<1)
-        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<1)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2240,8 +2240,6 @@ void EXTI2_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<2)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT & (1<<2)
-        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<2)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2266,8 +2264,6 @@ void EXTI3_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<3)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT & (1<<3)
-        task_add_immediate(mpg_select, NULL);
 #elif I2C_STROBE_BIT & (1<<3)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2292,8 +2288,6 @@ void EXTI4_IRQHandler(void)
         __HAL_GPIO_EXTI_CLEAR_IT(ifg);
 #if LIMIT_MASK & (1<<4)
         core_pin_irq(ifg);
-#elif MPG_MODE_BIT & (1<<4)
-        task_add_immediate(mpg_select);
 #elif I2C_STROBE_BIT & (1<<4)
         if(i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2325,10 +2319,6 @@ void EXTI9_5_IRQHandler(void)
         if((ifg & I2C_STROBE_BIT) && i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
 #endif
-#if MPG_MODE_BIT & 0x03E0
-        if(ifg & MPG_MODE_BIT)
-            task_add_immediate(mpg_select, NULL);
-#endif
 #if AUXINPUT_MASK & 0x03E0
         if(ifg & aux_irq)
             aux_pin_irq(ifg & aux_irq);
@@ -2358,10 +2348,6 @@ void EXTI15_10_IRQHandler(void)
 #if I2C_STROBE_BIT & 0xFC00
         if((ifg & I2C_STROBE_BIT) && i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
-#endif
-#if MPG_MODE_BIT & 0xFC00
-        if(ifg & MPG_MODE_BIT)
-            task_add_immediate(mpg_select, NULL);
 #endif
 #if AUXINPUT_MASK & 0xFC00
         if(ifg & aux_irq)
