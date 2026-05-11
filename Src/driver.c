@@ -357,7 +357,9 @@ static void stepperEnable (axes_signals_t enable, bool hold)
   #ifdef STEPPERS_ENABLE_PORT
     DIGITAL_OUT(STEPPERS_ENABLE_PORT, STEPPERS_ENABLE_PIN, enable.x);
   #else
+   #ifdef X_ENABLE_PIN
     DIGITAL_OUT(X_ENABLE_PORT, X_ENABLE_PIN, enable.x);
+   #endif
    #ifdef X2_ENABLE_PIN
     DIGITAL_OUT(X2_ENABLE_PORT, X2_ENABLE_PIN, enable.x);
    #endif
@@ -1281,7 +1283,9 @@ static spindle_state_t spindleGetState (spindle_ptrs_t *spindle)
 
     UNUSED(spindle);
 
+#ifdef SPINDLE_ENABLE_BIT
     state.on = (SPINDLE_ENABLE_PORT->IDR & SPINDLE_ENABLE_BIT) != 0;
+#endif
 #ifdef SPINDLE_DIRECTION_PIN
     state.ccw = (SPINDLE_DIRECTION_PORT->IDR & SPINDLE_DIRECTION_BIT) != 0;
 #endif
@@ -1786,8 +1790,10 @@ static bool driver_setup (settings_t *settings)
 
  // Coolant init (??)
 
+#ifdef COOLANT_FLOOD_PIN
     BITBAND_PERI(COOLANT_FLOOD_PORT->ODR, COOLANT_FLOOD_PIN) = 1;
     BITBAND_PERI(COOLANT_FLOOD_PORT->ODR, COOLANT_FLOOD_PIN) = 0;
+#endif
 
 #ifdef COOLANT_MIST_PIN
     BITBAND_PERI(COOLANT_MIST_PORT->ODR, COOLANT_MIST_PIN) = 1;
@@ -1850,7 +1856,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103RC";
 #endif
-    hal.driver_version = "260305";
+    hal.driver_version = "260509";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
