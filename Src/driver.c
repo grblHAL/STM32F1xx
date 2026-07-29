@@ -1856,7 +1856,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103RC";
 #endif
-    hal.driver_version = "260509";
+    hal.driver_version = "260728";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -2139,16 +2139,23 @@ void core_pin_debounce (void *pin)
     EXTI->IMR |= input->bit; // Reenable pin interrupt
 }
 
-static inline void core_pin_irq (uint32_t bit)
+static inline void core_pin_irq (uint32_t bits)
 {
+    uint32_t bit;
     input_signal_t *input;
 
-    if((input = pin_irq[__builtin_ffs(bit) - 1])) {
+    while(bits) {
 
-        if(input->mode.debounce && task_add_delayed(core_pin_debounce, input, 40))
-            EXTI->IMR &= ~input->bit; // Disable pin interrupt
-        else
-            core_pin_debounce(input);
+        bit = bits & -bits; // isolate the lowest set bit
+        bits &= ~bit;
+
+        if((input = pin_irq[__builtin_ffs(bit) - 1])) {
+
+            if(input->mode.debounce && task_add_delayed(core_pin_debounce, input, 40))
+                EXTI->IMR &= ~input->bit; // Disable pin interrupt
+            else
+                core_pin_debounce(input);
+        }
     }
 }
 
@@ -2170,19 +2177,26 @@ void aux_pin_debounce (void *pin)
     EXTI->IMR |= input->bit; // Reenable pin interrupt
 }
 
-static inline void aux_pin_irq (uint32_t bit)
+static inline void aux_pin_irq (uint32_t bits)
 {
+    uint32_t bit;
     input_signal_t *input;
 
-    if((input = pin_irq[__builtin_ffs(bit) - 1]) && input->group == PinGroup_AuxInput) {
-        if(input->mode.debounce && task_add_delayed(aux_pin_debounce, input, 40)) {
-            EXTI->IMR &= ~input->bit; // Disable pin interrupt
+    while(bits) {
+
+        bit = bits & -bits; // isolate the lowest set bit
+        bits &= ~bit;
+
+        if((input = pin_irq[__builtin_ffs(bit) - 1]) && input->group == PinGroup_AuxInput) {
+            if(input->mode.debounce && task_add_delayed(aux_pin_debounce, input, 40)) {
+                EXTI->IMR &= ~input->bit; // Disable pin interrupt
 #if SAFETY_DOOR_ENABLE
-            if(input->id == Input_SafetyDoor)
-                debounce.safety_door = input->mode.debounce;
+                if(input->id == Input_SafetyDoor)
+                    debounce.safety_door = input->mode.debounce;
 #endif
-        } else
-            ioports_event(input);
+            } else
+                ioports_event(input);
+        }
     }
 }
 
@@ -2321,6 +2335,10 @@ void EXTI9_5_IRQHandler(void)
         if((ifg & SPI_IRQ_BIT) && spi_irq.callback)
             spi_irq.callback(0, DIGITAL_IN(SPI_IRQ_PORT, SPI_IRQ_PIN) == 0);
 #endif
+#if LIMIT_MASK & 0x03E0
+        if(ifg & LIMIT_MASK)
+            core_pin_irq(ifg & LIMIT_MASK);
+#endif
 #if I2C_STROBE_BIT & 0x03E0
         if((ifg & I2C_STROBE_BIT) && i2c_strobe.callback)
             i2c_strobe.callback(0, DIGITAL_IN(I2C_STROBE_PORT, I2C_STROBE_PIN) == 0);
@@ -2349,7 +2367,7 @@ void EXTI15_10_IRQHandler(void)
 #endif
 #if LIMIT_MASK & 0xFC00
         if(ifg & LIMIT_MASK)
-            core_pin_irq(ifg);
+            core_pin_irq(ifg & LIMIT_MASK);
 #endif
 #if I2C_STROBE_BIT & 0xFC00
         if((ifg & I2C_STROBE_BIT) && i2c_strobe.callback)
