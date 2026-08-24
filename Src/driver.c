@@ -1378,7 +1378,7 @@ void gpio_irq_enable (const input_signal_t *input, pin_irq_mode_t irq_mode)
 }
 
 // Configures peripherals when settings are initialized or changed
-void settings_changed (settings_t *settings, settings_changed_flags_t changed)
+void on_settings_changed (settings_t *settings, settings_changed_flags_t changed)
 {
 #if USE_STEPDIR_MAP
     stepdirmap_init (settings);
@@ -1810,7 +1810,7 @@ static bool driver_setup (settings_t *settings)
 
     IOInitDone = settings->version.id == 23;
 
-    hal.settings_changed(settings, (settings_changed_flags_t){0});
+    grbl.on_settings_changed(settings, (settings_changed_flags_t){0});
 
     return IOInitDone;
 }
@@ -1871,7 +1871,7 @@ bool driver_init (void)
     hal.step_us_min = 3.5f;
     hal.rx_buffer_size = RX_BUFFER_SIZE;
     hal.delay_ms = &driver_delay;
-    hal.settings_changed = settings_changed;
+    grbl.on_settings_changed = on_settings_changed;
 
     hal.stepper.wake_up = stepperWakeUp;
     hal.stepper.go_idle = stepperGoIdle;
