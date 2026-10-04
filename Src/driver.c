@@ -343,7 +343,7 @@ static void driver_delay (uint32_t ms, void (*callback)(void))
         SysTick->CTRL |= SysTick_CTRL_ENABLE_Msk;
         if(!(delay.callback = callback)) {
             while(delay.ms)
-                grbl.on_execute_delay(state_get());
+                task_execute(true);
         }
     } else if(callback)
         callback();
@@ -1856,7 +1856,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103RC";
 #endif
-    hal.driver_version = "260728";
+    hal.driver_version = "261003";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
