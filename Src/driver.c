@@ -1328,30 +1328,57 @@ static coolant_state_t coolantGetState (void)
     return state;
 }
 
+static volatile uint32_t lock;
+
+static void disable_irq (void)
+{
+    if(!__get_PRIMASK() || lock) {
+        lock++;
+        __disable_irq();
+    }
+}
+
+static void enable_irq (void)
+{
+    if(lock && !--lock)
+        __enable_irq();
+}
+
 // Helper functions for setting/clearing/inverting individual bits atomically (uninterruptable)
 static void bitsSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t bits)
 {
-    __disable_irq();
+    uint32_t irq = __get_PRIMASK();
+    __set_PRIMASK(1);
+
     *ptr |= bits;
-    __enable_irq();
+
+    __set_PRIMASK(irq);
 }
 
 static uint_fast16_t bitsClearAtomic (volatile uint_fast16_t *ptr, uint_fast16_t bits)
 {
-    __disable_irq();
+    uint32_t irq = __get_PRIMASK();
+    __set_PRIMASK(1);
+
     uint_fast16_t prev = *ptr;
+
     *ptr &= ~bits;
-    __enable_irq();
+    __set_PRIMASK(irq);
+
     return prev;
 }
 
 static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t value)
 {
-    __disable_irq();
+    uint32_t irq = __get_PRIMASK();
+    __set_PRIMASK(1);
+
     uint_fast16_t prev = *ptr;
+
     *ptr = value;
-    __enable_irq();
-    return prev;
+    __set_PRIMASK(irq);
+
+   return prev;
 }
 
 static uint32_t getElapsedTicks (void)
@@ -1946,8 +1973,8 @@ bool driver_init (void)
 
     hal.control.get_state = systemGetState;
 
-    hal.irq_enable = __enable_irq;
-    hal.irq_disable = __disable_irq;
+    hal.irq_enable = enable_irq;
+    hal.irq_disable = disable_irq;
 #if I2C_STROBE_ENABLE
     hal.irq_claim = irq_claim;
 #endif
@@ -1985,7 +2012,6 @@ bool driver_init (void)
     hal.coolant_cap.bits = COOLANT_ENABLE;
     hal.driver_cap.software_debounce = On;
     hal.driver_cap.step_pulse_delay = On;
-    hal.driver_cap.amass_level = 3;
     hal.driver_cap.control_pull_up = On;
     hal.driver_cap.limits_pull_up = On;
 
