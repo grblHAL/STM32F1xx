@@ -266,9 +266,6 @@ static bool IOInitDone = false;
 #if DRIVER_SPINDLE_ENABLE
 static spindle_id_t spindle_id = -1;
 #endif
-#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
-static spindle_pwm_t spindle_pwm = { .offset = -1 };
-#endif
 static pin_group_pins_t limit_inputs = {};
 static delay_t delay = { .ms = 1, .callback = NULL }; // NOTE: initial ms set to 1 for "resetting" systick timer on startup
 
@@ -1094,42 +1091,48 @@ inline static void spindle_off (spindle_ptrs_t *spindle)
 {
 #if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
     spindle->context.pwm->flags.enable_out = Off;
-  #ifdef SPINDLE_DIRECTION_PIN
+  #if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
     if(spindle->context.pwm->flags.cloned) {
-        BITBAND_PERI(SPINDLE_DIRECTION_PORT->ODR, SPINDLE_DIRECTION_PIN) = settings.pwm_spindle.invert.ccw;
+        DIGITAL_OUT(SPINDLE_DIRECTION_PORT, SPINDLE_DIRECTION_PIN, spindle->context.pwm->settings->invert.on);
     } else {
-        BITBAND_PERI(SPINDLE_ENABLE_PORT->ODR, SPINDLE_ENABLE_PIN) = settings.pwm_spindle.invert.on;
+        DIGITAL_OUT(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, spindle->context.pwm->settings->invert.on);
     }
-  #elif defined(SPINDLE_ENABLE_PIN)
-    BITBAND_PERI(SPINDLE_ENABLE_PORT->ODR, SPINDLE_ENABLE_PIN) = settings.pwm_spindle.invert.on;
+  #else
+    DIGITAL_OUT(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, spindle->context.pwm->settings->invert.on);
   #endif
 #else
-    BITBAND_PERI(SPINDLE_ENABLE_PORT->ODR, SPINDLE_ENABLE_PIN) = settings.pwm_spindle.invert.on;
+    DIGITAL_OUT(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, spindle->context.pwm->settings->invert.on);
 #endif
 }
 
 inline static void spindle_on (spindle_ptrs_t *spindle)
 {
 #if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
-    spindle->context.pwm->flags.enable_out = On;
-  #ifdef SPINDLE_DIRECTION_PIN
+  #if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
     if(spindle->context.pwm->flags.cloned) {
-        BITBAND_PERI(SPINDLE_DIRECTION_PORT->ODR, SPINDLE_DIRECTION_PIN) = !settings.pwm_spindle.invert.ccw;
+        DIGITAL_OUT(SPINDLE_DIRECTION_PORT, SPINDLE_DIRECTION_PIN, !spindle->context.pwm->settings->invert.on);
     } else {
-        BITBAND_PERI(SPINDLE_ENABLE_PORT->ODR, SPINDLE_ENABLE_PIN) = !settings.pwm_spindle.invert.on;
+        DIGITAL_OUT(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, !spindle->context.pwm->settings->invert.on);
     }
-  #elif defined(SPINDLE_ENABLE_PIN)
-    BITBAND_PERI(SPINDLE_ENABLE_PORT->ODR, SPINDLE_ENABLE_PIN) = !settings.pwm_spindle.invert.on;
+  #else
+    DIGITAL_OUT(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, !spindle->context.pwm->settings->invert.on);
   #endif
+  #if SPINDLE_ENCODER_ENABLE
+    if(!spindle->context.pwm->flags.enable_out && spindle->reset_data)
+        spindle->reset_data();
+  #endif
+    spindle->context.pwm->flags.enable_out = On;
 #else
-    BITBAND_PERI(SPINDLE_ENABLE_PORT->ODR, SPINDLE_ENABLE_PIN) = !settings.pwm_spindle.invert.on;
+    DIGITAL_OUT(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, !spindle->context.pwm->settings->invert.on);
 #endif
 }
 
-inline static void spindle_dir (bool ccw)
+inline static void spindle_dir (spindle_ptrs_t *spindle, bool ccw)
 {
-#ifdef SPINDLE_DIRECTION_PIN
-    BITBAND_PERI(SPINDLE_DIRECTION_PORT->ODR, SPINDLE_DIRECTION_PIN) = ccw ^ settings.pwm_spindle.invert.ccw;
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
+    if(!(spindle->context.pwm->flags.cloned || spindle->cap.clone)) {
+        DIGITAL_OUT(SPINDLE_DIRECTION_PORT, SPINDLE_DIRECTION_PIN, ccw ^ spindle->context.pwm->settings->invert.ccw);
+    }
 #else
     UNUSED(ccw);
 #endif
@@ -1138,12 +1141,10 @@ inline static void spindle_dir (bool ccw)
 // Start or stop spindle
 static void spindleSetState (spindle_ptrs_t *spindle, spindle_state_t state, float rpm)
 {
-    UNUSED(rpm);
-
-    if(!state.on)
+    if(!(spindle->context.pwm->flags.cloned ? state.ccw : state.on))
         spindle_off(spindle);
     else {
-        spindle_dir(state.ccw);
+        spindle_dir(spindle, state.ccw);
         spindle_on(spindle);
     }
 }
@@ -1204,10 +1205,7 @@ static void spindleSetStateVariable (spindle_ptrs_t *spindle, spindle_state_t st
         spindle_off(spindle);
         pwm_off(spindle);
     } else {
-#ifdef SPINDLE_DIRECTION_PIN
-        if(!spindle->context.pwm->flags.cloned)
-            spindle_dir(state.ccw);
-#endif
+        spindle_dir(spindle, state.ccw);
         if(rpm == 0.0f && spindle->context.pwm->flags.rpm_controlled)
             spindle_off(spindle);
         else {
@@ -1219,6 +1217,8 @@ static void spindleSetStateVariable (spindle_ptrs_t *spindle, spindle_state_t st
 
 bool spindleConfig (spindle_ptrs_t *spindle)
 {
+    static spindle_pwm_t spindle_pwm = { .offset = -1 };
+
     if(spindle == NULL)
         return false;
 
@@ -1279,18 +1279,19 @@ bool spindleConfig (spindle_ptrs_t *spindle)
 // Returns spindle state in a spindle_state_t variable
 static spindle_state_t spindleGetState (spindle_ptrs_t *spindle)
 {
-    spindle_state_t state = { settings.pwm_spindle.invert.mask };
+    spindle_state_t state = { spindle->context.pwm->settings->invert.mask };
 
-    UNUSED(spindle);
-
-#ifdef SPINDLE_ENABLE_BIT
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_ENA
     state.on = (SPINDLE_ENABLE_PORT->IDR & SPINDLE_ENABLE_BIT) != 0;
 #endif
-#ifdef SPINDLE_DIRECTION_PIN
-    state.ccw = (SPINDLE_DIRECTION_PORT->IDR & SPINDLE_DIRECTION_BIT) != 0;
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
+    if(spindle->cap.direction)
+        state.ccw = (SPINDLE_DIRECTION_PORT->IDR & SPINDLE_DIRECTION_BIT) != 0;
 #endif
-    state.value ^= settings.pwm_spindle.invert.mask;
-#ifdef SPINDLE_PWM_PIN
+
+    state.value ^= spindle->context.pwm->settings->invert.mask;
+
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
     state.on |= spindle->param->state.on;
 #endif
 
@@ -1883,7 +1884,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F103RC";
 #endif
-    hal.driver_version = "261003";
+    hal.driver_version = "261104";
     hal.driver_url = GRBL_URL "/STM32F1xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
